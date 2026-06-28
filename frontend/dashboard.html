@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Дашборд - Habit RPG</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+        /* Временные стили для дашборда */
+        .dashboard-container {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        .dashboard-box {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .avatar {
+            font-size: 40px;
+        }
+
+        .user-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .user-stats span {
+            background: #f0f0f0;
+            padding: 5px 12px;
+            border-radius: 10px;
+        }
+
+        .btn-logout {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-logout:hover {
+            background: #ff6b81;
+        }
+
+        .habits-list {
+            margin-top: 20px;
+        }
+
+        .habit-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            transition: background 0.2s;
+        }
+
+        .habit-item:hover {
+            background: #f8f9fa;
+        }
+
+        .habit-name {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .habit-checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .add-habit-btn {
+            width: 100%;
+            padding: 12px;
+            background: #f0f0f0;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            transition: background 0.2s;
+        }
+
+        .add-habit-btn:hover {
+            background: #e8e8e8;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-box">
+            <!-- Шапка -->
+            <div class="dashboard-header">
+                <div class="user-info">
+                    <div class="avatar">😊</div>
+                    <div>
+                        <h2 id="usernameDisplay">Пользователь</h2>
+                        <div class="user-stats">
+                            <span>🏆 Уровень <span id="levelDisplay">1</span></span>
+                            <span>⭐ Опыт <span id="xpDisplay">0</span></span>
+                            <span>🪙 Золото <span id="goldDisplay">0</span></span>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-logout" onclick="logoutUser()">Выйти</button>
+            </div>
+
+            <!-- Список привычек -->
+            <div class="habits-list" id="habitsList">
+                <div class="empty-state">
+                    <p>😴 У вас пока нет привычек</p>
+                    <p style="font-size:14px;">Нажмите кнопку ниже, чтобы добавить первую</p>
+                </div>
+            </div>
+
+            <!-- Кнопка добавления -->
+            <button class="add-habit-btn" id="addHabitBtn">➕ Добавить привычку</button>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/habits.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
