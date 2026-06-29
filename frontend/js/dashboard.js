@@ -19,6 +19,10 @@ function updateUserInfo() {
     document.getElementById('levelDisplay').textContent = user.level;
     document.getElementById('xpDisplay').textContent = user.experience;
     document.getElementById('goldDisplay').textContent = user.gold;
+    
+    const xpProgress = user.experience % 100;
+    document.getElementById('xpProgress').style.width = xpProgress + '%';
+    document.getElementById('xpProgressText').textContent = `${xpProgress}% до следующего уровня`;
 }
 
 // Загрузить привычки
