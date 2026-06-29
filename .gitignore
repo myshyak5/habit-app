@@ -1,2 +1,6 @@
 venv
 .vscode
+build
+backend/venv/
+**/__pycache__/
+*.pyc
