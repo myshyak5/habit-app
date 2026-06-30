@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Профиль - Habit RPG</title>
     <link rel="stylesheet" href="css/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Стили для профиля */
         .profile-container {
@@ -146,6 +147,21 @@
             margin-top: 20px;
             flex-wrap: wrap;
         }
+        .chart-container {
+            margin: 25px 0;
+        }
+
+        .chart-container h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .chart-container canvas {
+            max-width: 100%;
+            max-height: 250px;
+        }
 
         .btn-back {
             background: #f0f0f0;
@@ -242,7 +258,12 @@
                     0% до следующего уровня
                 </span>
             </div>
-
+            <div class="chart-container" style="margin: 25px 0;">
+                <h3 style="margin-bottom:15px; text-align:center; color:#333;">📈 Активность за неделю</h3>
+                <div style="background:#f8f9fa; border-radius:12px; padding:20px;">
+                    <canvas id="activityChart" style="max-height:250px;"></canvas>
+                </div>
+            </div>
             <!-- Смена аватара -->
             <hr style="margin:20px 0;border:none;border-top:2px solid #f0f0f0;" />
             <h3 style="margin-bottom:10px;">🎨 Выберите аватар</h3>
@@ -268,6 +289,7 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/habits.js"></script> 
     <script src="js/profile.js"></script>
 </body>
 </html>
