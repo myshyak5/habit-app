@@ -14,6 +14,17 @@ class User(AbstractUser):
     def __str__(self):
         return self.username
     
+    def add_experience(self, xp_amount):
+        """Добавить опыт и обновить уровень"""
+        self.experience += xp_amount
+        
+        if self.experience < 0:
+            self.experience = 0
+            
+        self.level = max(1, self.experience // 100 + 1)
+        
+        self.save()
+    
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
