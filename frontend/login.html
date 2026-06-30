@@ -6,30 +6,36 @@
     <title>Вход - Habit RPG</title>
     <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
+<body class="auth-page">
     <div class="auth-container">
         <div class="auth-box">
             <h1>🎮 Habit RPG</h1>
             <h2>Вход в аккаунт</h2>
+
             <form id="loginForm">
                 <div class="form-group">
                     <label for="username">Имя пользователя</label>
                     <input type="text" id="username" placeholder="Введите имя" required />
                 </div>
+
                 <div class="form-group">
                     <label for="password">Пароль</label>
                     <input type="password" id="password" placeholder="Введите пароль" required />
                 </div>
+
                 <div id="errorMessage" class="error-message"></div>
+
                 <button type="submit" class="btn-primary" style="width:100%;">
                     Войти
                 </button>
+
                 <p class="auth-link">
                     Нет аккаунта? <a href="register.html">Зарегистрироваться</a>
                 </p>
             </form>
         </div>
     </div>
+
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script>
@@ -41,7 +47,7 @@
             errorDiv.style.display = 'none';
             errorDiv.textContent = '';
             try {
-                const data = await loginUser(username, password);
+                await loginUser(username, password);
                 window.location.href = 'dashboard.html';
             } catch (error) {
                 errorDiv.textContent = error.message || 'Ошибка входа';

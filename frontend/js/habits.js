@@ -16,7 +16,7 @@ async function createHabit(name, description = '', xpReward = 10) {
 
 // Обновить привычку (отметить выполненной)
 async function toggleHabit(habitId, completedDates) {
-    return await apiRequest(`/habits/${habitId}/`, 'PUT', {
+    return await apiRequest(`/habits/${habitId}/`, 'PATCH', {
         completed_dates: completedDates,
     });
 }
