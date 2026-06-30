@@ -46,4 +46,12 @@ class LoginView(generics.GenericAPIView):
             'level': user.level,
             'experience': user.experience,
             'gold': user.gold,
+            'avatar_skin': user.avatar_skin,
         })
+        
+class UserProfileView(generics.RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserSerializer
+
+    def get_object(self):
+        return self.request.user

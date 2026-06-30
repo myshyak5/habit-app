@@ -1,7 +1,44 @@
-venv
-.vscode
-build
-.vscode
-backend/venv/
-**/__pycache__/
+# ===== ВИРТУАЛЬНОЕ ОКРУЖЕНИЕ =====
+venv/
+env/
+.venv/
+.env
+
+# ===== БАЗА ДАННЫХ =====
+db.sqlite3
+*.sqlite3
+
+# ===== PYTHON =====
+__pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ===== DJANGO =====
+*.log
+*.pot
+media/
+staticfiles/
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+
+# ===== ОС =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== ВРЕМЕННЫЕ ФАЙЛЫ =====
+*.bak
+*.tmp
+*.temp
+local_settings.py
