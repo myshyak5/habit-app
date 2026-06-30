@@ -43,3 +43,17 @@ class Habit(models.Model):
         verbose_name = 'Привычка'
         verbose_name_plural = 'Привычки'
         ordering = ['-created_at']
+        
+class Skin(models.Model):
+    """Модель скина для аватара"""
+    name = models.CharField(max_length=100, verbose_name='Название')
+    emoji = models.CharField(max_length=10, verbose_name='Эмодзи')
+    price = models.IntegerField(verbose_name='Цена (в золоте)')
+    
+    def __str__(self):
+        return f"{self.emoji} {self.name} ({self.price} золота)"
+    
+    class Meta:
+        verbose_name = 'Скин'
+        verbose_name_plural = 'Скины'
+        ordering = ['price']

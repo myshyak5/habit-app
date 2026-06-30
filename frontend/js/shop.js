@@ -6,7 +6,7 @@
 
 // Список доступных скинов
 const SKINS = [
-    { id: 1, emoji: '😊', name: 'Улыбка', price: 0 },
+    { id: 1, emoji: '🐭', name: 'Мышь', price: 200 },
     { id: 2, emoji: '🐼', name: 'Панда', price: 250 },
     { id: 3, emoji: '💃', name: 'Танцор', price: 300 },
     { id: 4, emoji: '🦖', name: 'Динозавр', price: 350 },
@@ -24,41 +24,34 @@ let userSkins = [];
 document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
     
-    // Загружаем данные пользователя
     const user = getUserData();
     updateGold(user.gold);
-    
-    // Загружаем скины пользователя (из localStorage или сервера)
     loadUserSkins();
-    
-    // Рендерим магазин
     renderShop();
 });
 
-// Обновить отображение золота
 function updateGold(gold) {
     document.getElementById('shopGold').textContent = gold || 0;
 }
 
-// Загрузить скины пользователя
 function loadUserSkins() {
-    // Пока храним в localStorage
     const saved = localStorage.getItem('userSkins');
     if (saved) {
         userSkins = JSON.parse(saved);
     } else {
-        // По умолчанию у всех есть первый скин (бесплатный)
-        userSkins = [SKINS[0].id];
+        userSkins = [];
         localStorage.setItem('userSkins', JSON.stringify(userSkins));
     }
     
-    // Текущий выбранный скин
-    const currentAvatar = localStorage.getItem('avatar') || '😊';
-    const currentSkin = SKINS.find(s => s.emoji === currentAvatar);
-    selectedSkin = currentSkin ? currentSkin.id : SKINS[0].id;
+    const currentAvatar = localStorage.getItem('avatar');
+    if (currentAvatar) {
+        const currentSkin = SKINS.find(s => s.emoji === currentAvatar);
+        selectedSkin = currentSkin ? currentSkin.id : null;  // ← НЕ ВЫБИРАЕМ ПЕРВЫЙ
+    } else {
+        selectedSkin = null;
+    }
 }
 
-// Сохранить скины пользователя
 function saveUserSkins() {
     localStorage.setItem('userSkins', JSON.stringify(userSkins));
 }
@@ -66,10 +59,6 @@ function saveUserSkins() {
 // =============================================
 // 🎨 ОТРИСОВКА МАГАЗИНА
 // =============================================
-
-// frontend/js/shop.js
-
-// frontend/js/shop.js
 
 function renderShop() {
     const grid = document.getElementById('shopGrid');
@@ -98,14 +87,14 @@ function renderShop() {
             buttonClass = 'btn-buy owned';
             disabled = false;
         } else if (canBuy) {
-            buttonText = `💵 ${skin.price}`;      // ← ЗДЕСЬ
+            buttonText = `💵 ${skin.price}`;
             buttonClass = 'btn-buy';
             disabled = false;
         } else {
-            buttonText = `💵 ${skin.price}`;      // ← И ЗДЕСЬ
+            buttonText = `💵 ${skin.price}`;
             buttonClass = 'btn-buy disabled';
             disabled = true;
-            hintText = `Не хватает ${shortfall}💵`;  // ← И ЗДЕСЬ
+            hintText = `Не хватает ${shortfall} 💵`;
         }
 
         return `
@@ -124,6 +113,7 @@ function renderShop() {
         `;
     }).join('');
 }
+
 // =============================================
 // 🎯 ДЕЙСТВИЯ В МАГАЗИНЕ
 // =============================================
@@ -136,48 +126,36 @@ async function handleShopAction(skinId) {
     const user = getUserData();
     const gold = user.gold || 0;
 
-    // Если скин уже куплен — выбираем его
     if (isOwned) {
         selectSkin(skinId);
         return;
     }
 
-    // Если недостаточно золота
     if (gold < skin.price) {
         showMessage('❌ Недостаточно золота! Заработайте его, выполняя привычки.', 'error');
         return;
     }
 
-    // Подтверждение покупки
     const confirmBuy = confirm(
         `🛒 Купить скин "${skin.name}" ${skin.emoji}?\n\n` +
-        `Цена: 🪙 ${skin.price}\n` +
+        `Цена: 💵 ${skin.price}\n` +
         `Ваш баланс: 💵 ${gold}\n\n` +
-        `После покупки у вас останется: 🪙 ${gold - skin.price}`
+        `После покупки у вас останется: 💵 ${gold - skin.price}`
     );
 
     if (!confirmBuy) return;
 
-    // Пытаемся купить
     try {
-        // Отправляем запрос на сервер (если есть API)
-        // await apiRequest('/shop/buy/', 'POST', { skin_id: skinId });
-        
-        // Локальное сохранение (пока нет бэкенда)
         userSkins.push(skinId);
         saveUserSkins();
         
-        // Списываем золото
         const newGold = gold - skin.price;
         localStorage.setItem('gold', newGold);
         
-        // Обновляем интерфейс
         updateGold(newGold);
         renderShop();
         
         showMessage(`✅ Скин "${skin.name}" успешно куплен!`, 'success');
-        
-        // Автоматически выбираем купленный скин
         selectSkin(skinId);
         
     } catch (error) {
@@ -186,23 +164,37 @@ async function handleShopAction(skinId) {
 }
 
 // =============================================
-// 🎨 ВЫБОР СКИНА
+// 🎨 ВЫБОР СКИНА (С СОХРАНЕНИЕМ В БД)
 // =============================================
 
-function selectSkin(skinId) {
+async function selectSkin(skinId) {
     const skin = SKINS.find(s => s.id === skinId);
     if (!skin) return;
 
     selectedSkin = skinId;
-    
-    // Сохраняем в localStorage
     localStorage.setItem('avatar', skin.emoji);
     
-    // Обновляем магазин
-    renderShop();
+    // 🔥 ОТПРАВЛЯЕМ НА СЕРВЕР
+    try {
+        await apiRequest('/user/update_avatar/', 'PATCH', {
+            avatar_skin: skin.emoji
+        });
+        console.log('✅ Аватар сохранён на сервере:', skin.emoji);
+    } catch (error) {
+        console.warn('⚠️ Не удалось сохранить аватар на сервере:', error);
+    }
     
-    // Обновляем аватар на дашборде (если он открыт в другой вкладке — не страшно)
+    renderShop();
+    updateAvatarOnDashboard(skin.emoji);
     showMessage(`✅ Скин "${skin.name}" выбран!`, 'success');
+}
+
+// 🔥 Обновление аватара на дашборде
+function updateAvatarOnDashboard(emoji) {
+    const avatarElement = document.getElementById('characterAvatar');
+    if (avatarElement) {
+        avatarElement.textContent = emoji;
+    }
 }
 
 // =============================================
@@ -225,10 +217,9 @@ function showMessage(text, type = 'info') {
 }
 
 // =============================================
-// 🔄 ОБНОВЛЕНИЕ ЗОЛОТА (если изменилось в другой вкладке)
+// 🔄 ОБНОВЛЕНИЕ ЗОЛОТА (из другой вкладки)
 // =============================================
 
-// Слушаем изменения localStorage (если золото обновилось на дашборде)
 window.addEventListener('storage', function(e) {
     if (e.key === 'gold') {
         const newGold = parseInt(e.newValue) || 0;

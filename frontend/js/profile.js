@@ -10,30 +10,28 @@ let selectedAvatar = '😊';
 document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
     
-    // Загружаем данные пользователя
     const user = getUserData();
     selectedAvatar = user.avatar || '😊';
     
-    // Отображаем данные
     updateProfile(user);
-    
-    // Подсвечиваем выбранный аватар
     highlightSelectedAvatar(selectedAvatar);
-    
-    // Загружаем статистику
     await loadProfileStats();
-    
-    // 🔥 ЗАГРУЖАЕМ ГРАФИК
     await loadChartData();
 });
 
-// Обновление профиля
+// =============================================
+// 📊 ПРОФИЛЬ
+// =============================================
+
 function updateProfile(user) {
     document.getElementById('profileUsername').textContent = user.username;
     document.getElementById('profileLevel').textContent = user.level;
     document.getElementById('profileXP').textContent = user.experience;
     document.getElementById('profileGold').textContent = user.gold;
     document.getElementById('profileAvatar').textContent = user.avatar || '😊';
+    
+    // 🔥 ОБНОВЛЯЕМ АВАТАР НА ДАШБОРДЕ
+    updateAvatarOnDashboard(user.avatar || '😊');
     
     // Прогресс-бар
     const xpPerLevel = 100;
@@ -52,7 +50,18 @@ function updateProfile(user) {
     }
 }
 
-// Загрузка статистики
+// 🔥 ОБНОВЛЕНИЕ АВАТАРА НА ДАШБОРДЕ
+function updateAvatarOnDashboard(emoji) {
+    const avatarElement = document.getElementById('characterAvatar');
+    if (avatarElement) {
+        avatarElement.textContent = emoji;
+    }
+}
+
+// =============================================
+// 📊 СТАТИСТИКА
+// =============================================
+
 async function loadProfileStats() {
     try {
         const habits = await getHabits();
@@ -70,40 +79,31 @@ async function loadProfileStats() {
 }
 
 // =============================================
-// 🔥 ГРАФИК АКТИВНОСТИ (CHART.JS)
+// 📈 ГРАФИК
 // =============================================
 
 async function loadChartData() {
     try {
-        // Получаем привычки
         const habits = await getHabits();
-        
-        // Создаём объект для подсчёта выполненных привычек по дням
         const today = new Date();
         const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
         const weekData = new Array(7).fill(0);
         
-        // Проходим по всем привычкам
         habits.forEach(habit => {
             const completedDates = habit.completed_dates || [];
             completedDates.forEach(dateStr => {
                 const date = new Date(dateStr);
-                // Проверяем, что дата входит в последние 7 дней
                 const diffDays = Math.floor((today - date) / (1000 * 60 * 60 * 24));
                 if (diffDays >= 0 && diffDays < 7) {
-                    // Индекс дня: 0 = понедельник, 6 = воскресенье
                     const dayIndex = (date.getDay() + 6) % 7;
                     weekData[dayIndex]++;
                 }
             });
         });
         
-        // Создаём график
         createChart(dayNames, weekData);
-        
     } catch (error) {
         console.error('Ошибка загрузки данных для графика:', error);
-        // Показываем заглушку
         const canvas = document.getElementById('activityChart');
         if (canvas) {
             canvas.parentElement.innerHTML = `
@@ -152,21 +152,17 @@ function createChart(labels, data) {
                     label: 'Выполнено привычек',
                     data: data,
                     backgroundColor: data.map(value => 
-                        value === maxValue && maxValue > 0
-                            ? '#764ba2'
-                            : '#667eea'
+                        value === maxValue && maxValue > 0 ? '#764ba2' : '#667eea'
                     ),
                     borderColor: data.map(value => 
-                        value === maxValue && maxValue > 0
-                            ? '#764ba2'
-                            : '#667eea'
+                        value === maxValue && maxValue > 0 ? '#764ba2' : '#667eea'
                     ),
                     borderWidth: 2,
                     borderRadius: {
-                        topLeft: 8,      // ← ЗАКРУГЛЕНИЕ СВЕРХУ СЛЕВА
-                        topRight: 8,     // ← ЗАКРУГЛЕНИЕ СВЕРХУ СПРАВА
-                        bottomLeft: 0,   // ← БЕЗ ЗАКРУГЛЕНИЯ СНИЗУ
-                        bottomRight: 0   // ← БЕЗ ЗАКРУГЛЕНИЯ СНИЗУ
+                        topLeft: 8,
+                        topRight: 8,
+                        bottomLeft: 0,
+                        bottomRight: 0
                     },
                     barPercentage: 0.7,
                     categoryPercentage: 0.8,
@@ -209,10 +205,7 @@ function createChart(labels, data) {
                         grid: { display: false },
                         ticks: {
                             color: '#555',
-                            font: { 
-                                size: 13,
-                                weight: '600'
-                            }
+                            font: { size: 13, weight: '600' }
                         }
                     }
                 }
@@ -224,10 +217,9 @@ function createChart(labels, data) {
 }
 
 // =============================================
-// АВАТАР
+// 🎨 АВАТАР В ПРОФИЛЕ
 // =============================================
 
-// Подсветка выбранного аватара
 function highlightSelectedAvatar(avatar) {
     const options = document.querySelectorAll('.avatar-option');
     options.forEach(option => {
@@ -235,7 +227,6 @@ function highlightSelectedAvatar(avatar) {
     });
 }
 
-// Обработчик клика по аватару
 document.querySelectorAll('.avatar-option').forEach(option => {
     option.addEventListener('click', function() {
         selectedAvatar = this.dataset.avatar;

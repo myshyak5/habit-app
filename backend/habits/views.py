@@ -1,7 +1,8 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
-from .models import Habit
-from .serializers import HabitSerializer
+from rest_framework.decorators import action
+from .models import Habit, Skin
+from .serializers import HabitSerializer, SkinSerializer
 from datetime import date
 
 
@@ -39,12 +40,21 @@ class HabitViewSet(viewsets.ModelViewSet):
         # ---- ЛОГИКА НАЧИСЛЕНИЯ ОПЫТА ----
         # Если привычка ТОЛЬКО ЧТО выполнена (есть сегодня, не было раньше)
         if today in new_dates and today not in old_dates:
-            user.add_experience(updated_instance.xp_reward)
-           
+            xp = updated_instance.xp_reward
+            gold = xp // 2  # Половина опыта в золоте (целочисленное деление)
+            user.add_experience(xp)
+            user.gold += gold
+        
+            user.save()
+
         # Если привычка ТОЛЬКО ЧТО отменена (была сегодня, теперь нет)
         elif today in old_dates and today not in new_dates:
-            user.add_experience(-updated_instance.xp_reward)
+            xp = updated_instance.xp_reward
+            gold = xp // 2  # Половина опыта в золоте
+            user.add_experience(-xp)
+            user.gold = max(0, user.gold - gold)
         
+            user.save()
         return Response(serializer.data)
 
     def perform_update(self, serializer):
@@ -56,3 +66,74 @@ class HabitViewSet(viewsets.ModelViewSet):
         instance.is_active = False
         instance.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    
+    
+class SkinViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet для работы со скинами"""
+    serializer_class = SkinSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Skin.objects.all()
+
+    @action(detail=True, methods=['post'], url_path='buy')
+    def buy_skin(self, request, pk=None):
+        """Покупка скина"""
+        skin = self.get_object()
+        user = request.user
+
+        # Проверяем, не куплен ли уже
+        if skin.id in (user.owned_skins or []):
+            return Response(
+                {'error': 'Этот скин уже куплен'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Проверяем, хватает ли золота
+        if user.gold < skin.price:
+            return Response(
+                {'error': f'Недостаточно золота. Нужно {skin.price}, у вас {user.gold}'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Списываем золото
+        user.gold -= skin.price
+        
+        # Добавляем скин в список купленных
+        if user.owned_skins is None:
+            user.owned_skins = []
+        user.owned_skins.append(skin.id)
+        
+        # Автоматически активируем скин (если пользователь хочет)
+        # Но фронт сам вызовет activate, так что просто сохраняем
+        user.save()
+
+        return Response({
+            'status': 'success',
+            'message': f'Скин "{skin.name}" куплен!',
+            'gold_left': user.gold,
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='activate')
+    def activate_skin(self, request, pk=None):
+        """Активация скина"""
+        skin = self.get_object()
+        user = request.user
+
+        # Проверяем, есть ли скин у пользователя
+        if skin.id not in (user.owned_skins or []):
+            return Response(
+                {'error': 'Этот скин не куплен'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Активируем скин (сохраняем эмодзи)
+        user.avatar_skin = skin.emoji
+        user.save()
+
+        return Response({
+            'status': 'success',
+            'message': f'Скин "{skin.name}" активирован!',
+            'avatar_skin': user.avatar_skin
+        }, status=status.HTTP_200_OK)
