@@ -172,6 +172,87 @@
             background-size: 200% auto;
             animation: shimmer 1.5s linear infinite;
         }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h3 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        /* ===== ВЫБОР СЛОЖНОСТИ ===== */
+        .difficulty-selector {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0 15px 0;
+        }
+
+        .diff-btn {
+            flex: 1;
+            padding: 12px 10px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .diff-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .diff-btn.selected {
+            border-color: #667eea;
+            background: #f0f3ff;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .diff-btn.easy.selected {
+            border-color: #2ecc71;
+            background: #e8f8f0;
+        }
+
+        .diff-btn.medium.selected {
+            border-color: #f39c12;
+            background: #fef9e7;
+        }
+
+        .diff-btn.hard.selected {
+            border-color: #e74c3c;
+            background: #fde8e8;
+        }
+
+        .diff-btn small {
+            font-weight: 400;
+            font-size: 12px;
+            color: #888;
+        }
     </style>
 </head>
 <body>
@@ -220,7 +301,40 @@
             <button class="add-habit-btn" id="addHabitBtn">➕ Добавить привычку</button>
         </div>
     </div>
-
+    <div id="addHabitModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>➕ Новая привычка</h3>
+            <form id="addHabitForm">
+                <div class="form-group">
+                    <label for="habitName">Название привычки</label>
+                    <input type="text" id="habitName" placeholder="Например: Сделать зарядку" required>
+                </div>
+                <div class="form-group">
+                    <label for="habitDescription">Описание (необязательно)</label>
+                    <input type="text" id="habitDescription" placeholder="Краткое описание">
+                </div>
+                <div class="form-group">
+                    <label>Сложность (опыт)</label>
+                    <div class="difficulty-selector">
+                        <button type="button" class="diff-btn easy" data-xp="20" onclick="selectDifficulty('easy', 20, this)">
+                            🟢 Лёгкий<br><small>+20 XP</small>
+                        </button>
+                        <button type="button" class="diff-btn medium" data-xp="40" onclick="selectDifficulty('medium', 40, this)">
+                            🟡 Средний<br><small>+40 XP</small>
+                        </button>
+                        <button type="button" class="diff-btn hard" data-xp="60" onclick="selectDifficulty('hard', 60, this)">
+                            🔴 Сложный<br><small>+60 XP</small>
+                        </button>
+                    </div>
+                    <input type="hidden" id="habitXp" value="20">
+                </div>
+                <div style="display:flex; gap:10px; margin-top:15px;">
+                    <button type="submit" class="btn-primary" style="flex:1;">➕ Добавить</button>
+                    <button type="button" class="btn-secondary" onclick="closeHabitModal()" style="flex:1;">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/utils.js"></script>

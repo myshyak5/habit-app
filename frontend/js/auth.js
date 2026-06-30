@@ -16,6 +16,9 @@ async function registerUser(username, password, password2, email = '') {
     if (data.level) localStorage.setItem('level', data.level);
     if (data.experience) localStorage.setItem('experience', data.experience);
     if (data.gold) localStorage.setItem('gold', data.gold);
+    
+    // 🔥 ДОБАВЛЯЕМ СОХРАНЕНИЕ АВАТАРА
+    localStorage.setItem('avatar', data.avatar_skin || '😊');
 
     return data;
 }
@@ -33,6 +36,9 @@ async function loginUser(username, password) {
     localStorage.setItem('level', data.level || 1);
     localStorage.setItem('experience', data.experience || 0);
     localStorage.setItem('gold', data.gold || 0);
+    
+    // 🔥 ДОБАВЛЯЕМ СОХРАНЕНИЕ АВАТАРА
+    localStorage.setItem('avatar', data.avatar_skin || '😊');
 
     return data;
 }
@@ -45,6 +51,7 @@ function logoutUser() {
     localStorage.removeItem('level');
     localStorage.removeItem('experience');
     localStorage.removeItem('gold');
+    localStorage.removeItem('avatar');  // 🔥 ДОБАВЛЯЕМ УДАЛЕНИЕ АВАТАРА
     window.location.href = 'login.html';
 }
 
@@ -65,6 +72,7 @@ function getUserData() {
         level: parseInt(localStorage.getItem('level')) || 1,
         experience: parseInt(localStorage.getItem('experience')) || 0,
         gold: parseInt(localStorage.getItem('gold')) || 0,
+        avatar: localStorage.getItem('avatar') || '😊',
         userId: parseInt(localStorage.getItem('user_id')) || null,
     };
 }

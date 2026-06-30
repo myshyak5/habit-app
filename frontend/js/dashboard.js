@@ -2,26 +2,17 @@
 
 // Загрузка дашборда
 document.addEventListener('DOMContentLoaded', async function() {
-    // Проверяем авторизацию
     if (!checkAuth()) return;
-
-    // Показываем данные пользователя
     updateUserInfo();
-
-    // Загружаем привычки
     await loadHabits();
 });
+
 function checkLevelUp(oldLevel, newLevel) {
     if (newLevel > oldLevel) {
-        // 🔥 АНИМАЦИЯ ПЕРСОНАЖА И КОНФЕТТИ
         animateCharacter('levelUp', 2500);
         setTimeout(() => showConfetti(), 300);
         setTimeout(() => showConfetti(), 700);
-        
-        // Показываем праздничное уведомление
         showNotification(`🎉 УРОВЕНЬ ПОВЫШЕН! Теперь вы ${newLevel} уровень!`, 'success');
-        
-        // Дополнительно: можно добавить CSS-анимацию "конфетти"
         const avatar = document.getElementById('characterAvatar');
         if (avatar) {
             avatar.style.transform = 'scale(1.5)';
@@ -33,20 +24,17 @@ function checkLevelUp(oldLevel, newLevel) {
     }
 }
 
-// Обновить информацию о пользователе
 function updateUserInfo() {
     const user = getUserData();
     const oldLevel = parseInt(localStorage.getItem('oldLevel')) || user.level;
     
-    // Обновляем основные данные
     document.getElementById('usernameDisplay').textContent = user.username;
     document.getElementById('levelDisplay').textContent = user.level;
     document.getElementById('xpDisplay').textContent = user.experience;
     document.getElementById('goldDisplay').textContent = user.gold;
     
-    // 🔥 ОБНОВЛЯЕМ ПРОГРЕСС-БАР
-    const xpPerLevel = 100; // Сколько опыта нужно для 1 уровня
-    const currentLevelXP = user.experience % xpPerLevel; // Опыт в текущем уровне
+    const xpPerLevel = 100;
+    const currentLevelXP = user.experience % xpPerLevel;
     const progressPercent = (currentLevelXP / xpPerLevel) * 100;
     
     const progressFill = document.getElementById('xpProgress');
@@ -54,7 +42,6 @@ function updateUserInfo() {
     
     if (progressFill) {
         progressFill.style.width = Math.min(progressPercent, 100) + '%';
-        // Если опыт переполнен (бывает при быстром росте), показываем 100%
         if (progressPercent >= 100) {
             progressFill.style.width = '100%';
             progressFill.classList.add('animating');
@@ -68,7 +55,6 @@ function updateUserInfo() {
         progressText.textContent = `${Math.round(progressPercent)}% до следующего уровня (осталось ${xpNeeded} XP)`;
     }
     
-    // Обновляем аватар персонажа
     const avatarElement = document.getElementById('characterAvatar');
     if (avatarElement) {
         avatarElement.textContent = user.avatar || '😊';
@@ -76,7 +62,7 @@ function updateUserInfo() {
     checkLevelUp(oldLevel, user.level);
     localStorage.setItem('oldLevel', user.level);
 }
-// Загрузить привычки
+
 async function loadHabits() {
     const habitsList = document.getElementById('habitsList');
 
@@ -93,7 +79,6 @@ async function loadHabits() {
             return;
         }
 
-        // Рендерим список привычек
         habitsList.innerHTML = habits.map(habit => {
             const completed = isCompletedToday(habit.completed_dates);
             return `
@@ -126,7 +111,6 @@ async function loadHabits() {
     }
 }
 
-// Обработчик отметки привычки
 async function toggleHabitHandler(habitId) {
     try {
         const habits = await getHabits();
@@ -137,7 +121,6 @@ async function toggleHabitHandler(habitId) {
         }
 
         const today = new Date().toISOString().split('T')[0];
-        // 🔥 ВОТ ЗДЕСЬ МЫ СОЗДАЁМ ПЕРЕМЕННУЮ
         let completed_dates = habit.completed_dates || [];
 
         if (completed_dates.includes(today)) {
@@ -153,17 +136,14 @@ async function toggleHabitHandler(habitId) {
         
         const isCompleted = completed_dates.includes(today);
 
-        // 🔥 АНИМАЦИЯ ПЕРСОНАЖА
         if (isCompleted) {
             animateCharacter('veryHappy', 1500);
+            // ✅ НАЧИСЛЯЕМ XP ТОЛЬКО ЗДЕСЬ
+            showNotification(`✅ Привычка выполнена! +${habit.xp_reward} XP`, 'success');
         } else {
             animateCharacter('sad', 1500);
+            showNotification('⏳ Привычка отменена', 'info');
         }
-
-        showNotification(
-            isCompleted ? '✅ Привычка выполнена! +XP' : '⏳ Привычка отменена',
-            isCompleted ? 'success' : 'info'
-        );
     } catch (error) {
         console.error('Ошибка отметки привычки:', error);
         showNotification('❌ Ошибка: ' + error.message, 'error');
@@ -171,27 +151,20 @@ async function toggleHabitHandler(habitId) {
     }
 }
 
-// 🔥 НОВАЯ ФУНКЦИЯ: запрашиваем актуальные данные пользователя с сервера
 async function refreshUserData() {
     try {
-        // Если бэкенд готов — запрашиваем /api/user/
         const userData = await apiRequest('/user/', 'GET');
-        
-        // Обновляем localStorage
         localStorage.setItem('level', userData.level);
         localStorage.setItem('experience', userData.experience);
         localStorage.setItem('gold', userData.gold);
         localStorage.setItem('avatar', userData.avatar_skin || '😊');
-        
         return userData;
     } catch (error) {
-        // Если API ещё нет — используем локальные данные
         console.warn('Не удалось обновить данные с сервера, используем локальные');
         return getUserData();
     }
 }
 
-// Обработчик удаления привычки
 async function deleteHabitHandler(habitId) {
     if (!confirm('Вы уверены, что хотите удалить эту привычку?')) return;
 
@@ -204,30 +177,15 @@ async function deleteHabitHandler(habitId) {
     }
 }
 
-// Обработчик добавления привычки
-document.getElementById('addHabitBtn')?.addEventListener('click', function() {
-    const name = prompt('Введите название привычки:');
-    if (!name || name.trim() === '') return;
+// =============================================
+// 🔥 АНИМАЦИЯ ПЕРСОНАЖА
+// =============================================
 
-    const description = prompt('Описание (необязательно):') || '';
-    const xpReward = parseInt(prompt('Опыт за выполнение (по умолчанию 10):') || '10');
-
-    createHabit(name.trim(), description, xpReward)
-        .then(() => {
-            loadHabits();
-            showNotification('Привычка добавлена!', 'success');
-        })
-        .catch(error => {
-            showNotification('Ошибка: ' + error.message, 'error');
-        });
-});
 function animateCharacter(emotion = 'happy', duration = 1500) {
     const avatar = document.getElementById('characterAvatar');
     if (!avatar) {
-        // Если нет элемента с id characterAvatar, используем обычный avatar
         const fallbackAvatar = document.querySelector('.avatar');
         if (!fallbackAvatar) return;
-        // Меняем текст у обычного avatar
         const emotions = {
             happy: '😊',
             veryHappy: '🤩',
@@ -305,3 +263,68 @@ function showConfetti() {
         setTimeout(() => confetti.remove(), 3000);
     }
 }
+
+// =============================================
+// 🪟 МОДАЛЬНОЕ ОКНО ДЛЯ ДОБАВЛЕНИЯ ПРИВЫЧКИ
+// =============================================
+
+let selectedDifficultyXp = 20;
+
+function selectDifficulty(level, xp, btn) {
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedDifficultyXp = xp;
+    document.getElementById('habitXp').value = xp;
+}
+
+function openHabitModal() {
+    document.getElementById('addHabitModal').style.display = 'flex';
+    document.getElementById('addHabitForm').reset();
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+    const defaultBtn = document.querySelector('.diff-btn.easy');
+    if (defaultBtn) {
+        defaultBtn.classList.add('selected');
+        selectedDifficultyXp = 20;
+        document.getElementById('habitXp').value = 20;
+    }
+}
+
+function closeHabitModal() {
+    document.getElementById('addHabitModal').style.display = 'none';
+}
+
+// 🔥 Обработчик отправки формы (НОВЫЙ)
+document.getElementById('addHabitForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('habitName').value.trim();
+    if (!name) {
+        showNotification('❌ Введите название привычки', 'error');
+        return;
+    }
+    
+    const description = document.getElementById('habitDescription').value.trim();
+    const xpReward = parseInt(document.getElementById('habitXp').value) || 20;
+    
+    try {
+        await createHabit(name, description, xpReward);
+        await loadHabits();
+        closeHabitModal();
+        // ✅ УБИРАЕМ НАЧИСЛЕНИЕ XP
+        showNotification(`✅ Привычка "${name}" создана!`, 'success');
+    } catch (error) {
+        showNotification('❌ Ошибка: ' + error.message, 'error');
+    }
+});
+
+// 🔥 Обработчик кнопки "Добавить привычку" (ТОЛЬКО ОДИН!)
+document.getElementById('addHabitBtn')?.addEventListener('click', function() {
+    openHabitModal();
+});
+
+// Закрытие модального окна при клике на фон
+document.getElementById('addHabitModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeHabitModal();
+    }
+});
