@@ -365,11 +365,13 @@ body.auth-page {
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
-    transition: background 0.2s;
+    transition: all 0.3s ease;  /* ← Добавить плавность */
 }
 
 .btn-secondary:hover {
     background: #e0e0e0;
+    transform: translateY(-2px);        /* ← Добавить подъём */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);  /* ← Добавить тень */
 }
 
 /* ===== АДАПТИВ ===== */
@@ -417,4 +419,49 @@ body.auth-page {
     position: fixed;
     pointer-events: none;
     z-index: 9999;
+}
+/* ===== ГЛАВНАЯ СТРАНИЦА (ЛЕНДИНГ) ===== */
+body.landing-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.landing-container {
+    width: 100%;
+    max-width: 500px;
+    padding: 20px;
+}
+
+.landing-box {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    text-align: center;
+}
+
+.landing-box h1 {
+    font-size: 36px;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.landing-box p {
+    color: #666;
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.landing-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 25px;
 }

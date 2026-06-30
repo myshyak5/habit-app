@@ -9,7 +9,7 @@
         /* Временные стили для дашборда */
         .dashboard-container {
             width: 100%;
-            max-width: 800px;
+            max-width: 700px;
             padding: 20px;
         }
 
@@ -118,22 +118,23 @@
             color: #999;
             padding: 30px;
         }
+        /* ===== ПРОГРЕСС-БАР ===== */
         .progress-container {
             margin: 15px 0 20px 0;
-            background: #f0f0f0;
+            background: transparent;     /* ← УБРАЛИ СЕРЫЙ ФОН */
             border-radius: 12px;
             padding: 15px 20px;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: none;            /* ← УБРАЛИ ТЕНЬ */
         }
 
         .progress-bar {
             width: 100%;
             height: 24px;
-            background: #e9ecef;
+            background: #e9ecef;         /* ← СВЕТЛО-СЕРЫЙ ФОН САМОЙ ПОЛОСКИ */
             border-radius: 12px;
             overflow: hidden;
             position: relative;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);  /* ← МОЖНО ТОЖЕ УБРАТЬ */
         }
 
         .progress-fill {
@@ -180,6 +181,7 @@
             <nav class="nav-links">
                 <a href="dashboard.html" class="active">📊 Дашборд</a>
                 <a href="profile.html">👤 Профиль</a>
+                <a href="shop.html">🛒 Магазин</a>
             </nav>
             <button onclick="logoutUser()" class="btn-logout">Выйти</button>
         </div>
