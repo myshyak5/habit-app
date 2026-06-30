@@ -6,7 +6,7 @@
     <title>Регистрация - Habit RPG</title>
     <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
+<body class="auth-page">
     <div class="auth-container">
         <div class="auth-box">
             <h1>🎮 Habit RPG</h1>
@@ -22,24 +22,30 @@
                     <label for="email">Email (необязательно)</label>
                     <input type="email" id="email" placeholder="Введите email" />
                 </div>
+
                 <div class="form-group">
                     <label for="password">Пароль</label>
                     <input type="password" id="password" placeholder="Минимум 8 символов" required />
                 </div>
+
                 <div class="form-group">
                     <label for="password2">Подтвердите пароль</label>
                     <input type="password" id="password2" placeholder="Повторите пароль" required />
                 </div>
+
                 <div id="errorMessage" class="error-message"></div>
+
                 <button type="submit" class="btn-primary" style="width:100%;">
                     Зарегистрироваться
                 </button>
+
                 <p class="auth-link">
                     Уже есть аккаунт? <a href="login.html">Войти</a>
                 </p>
             </form>
         </div>
     </div>
+
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script>
@@ -50,7 +56,6 @@
             const password = document.getElementById('password').value;
             const password2 = document.getElementById('password2').value;
             const errorDiv = document.getElementById('errorMessage');
-
             errorDiv.style.display = 'none';
             errorDiv.textContent = '';
             if (password !== password2) {
@@ -59,7 +64,7 @@
                 return;
             }
             try {
-                const data = await registerUser(username, password, password2, email);
+                await registerUser(username, password, password2, email);
                 window.location.href = 'dashboard.html';
             } catch (error) {
                 errorDiv.textContent = error.message || 'Ошибка регистрации';

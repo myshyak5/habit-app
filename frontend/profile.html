@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Профиль - Habit RPG</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+        /* Стили для профиля */
+        .profile-container {
+            width: 100%;
+            max-width: 700px;
+            padding: 20px;
+        }
+
+        .profile-box {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .profile-avatar {
+            font-size: 60px;
+            background: #f8f9fa;
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 4px solid #667eea;
+            transition: transform 0.3s;
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
+        }
+
+        .profile-avatar:hover {
+            transform: scale(1.05);
+        }
+
+        .profile-name {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .profile-level-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            transition: background 0.2s;
+        }
+
+        .stat-card:hover {
+            background: #f0f0f0;
+        }
+
+        .stat-card .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .stat-card .stat-label {
+            font-size: 14px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .stat-card .stat-icon {
+            font-size: 24px;
+        }
+
+        /* Прогресс-бар в профиле */
+        .profile-progress {
+            margin: 20px 0;
+        }
+
+        .profile-progress .progress-bar {
+            height: 20px;
+        }
+
+        /* Смена аватара */
+        .avatar-selector {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+
+        .avatar-option {
+            font-size: 40px;
+            padding: 10px;
+            border: 3px solid #ddd;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .avatar-option:hover {
+            border-color: #667eea;
+            transform: scale(1.1);
+        }
+
+        .avatar-option.selected {
+            border-color: #667eea;
+            background: #f0f3ff;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .profile-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn-back {
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .btn-back:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 600px) {
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            .profile-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .avatar-selector {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">🎮 Habit RPG</div>
+            <nav class="nav-links">
+                <a href="dashboard.html">📊 Дашборд</a>
+                <a href="profile.html" class="active">👤 Профиль</a>
+            </nav>
+            <button onclick="logoutUser()" class="btn-logout">Выйти</button>
+        </div>
+    </header>
+    <div class="profile-container">
+        <div class="profile-box">
+            <!-- Шапка профиля -->
+            <div class="profile-header">
+                <div class="profile-avatar" id="profileAvatar">😊</div>
+                <div>
+                    <h1 class="profile-name" id="profileUsername">Пользователь</h1>
+                    <span class="profile-level-badge">🏆 Уровень <span id="profileLevel">1</span></span>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="profile-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">⭐</div>
+                    <div class="stat-value" id="profileXP">0</div>
+                    <div class="stat-label">Опыт (XP)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💵</div>
+                    <div class="stat-value" id="profileGold">0</div>
+                    <div class="stat-label">Золото</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-value" id="profileCompleted">0</div>
+                    <div class="stat-label">Выполнено привычек</div>
+                </div>
+            </div>
+
+            <!-- Прогресс-бар -->
+            <div class="profile-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="profileProgress" style="width: 0%;"></div>
+                </div>
+                <span id="profileProgressText" style="font-size:14px;color:#666;display:block;margin-top:8px;text-align:center;">
+                    0% до следующего уровня
+                </span>
+            </div>
+
+            <!-- Смена аватара -->
+            <hr style="margin:20px 0;border:none;border-top:2px solid #f0f0f0;" />
+            <h3 style="margin-bottom:10px;">🎨 Выберите аватар</h3>
+            <div class="avatar-selector" id="avatarSelector">
+                <div class="avatar-option" data-avatar="😊">😊</div>
+                <div class="avatar-option" data-avatar="😎">😎</div>
+                <div class="avatar-option" data-avatar="🤩">🤩</div>
+                <div class="avatar-option" data-avatar="🥳">🥳</div>
+                <div class="avatar-option" data-avatar="🧙‍♂️">🧙‍♂️</div>
+                <div class="avatar-option" data-avatar="🦸‍♂️">🦸‍♂️</div>
+                <div class="avatar-option" data-avatar="🐉">🐉</div>
+                <div class="avatar-option" data-avatar="🚀">🚀</div>
+            </div>
+
+            <!-- Кнопки -->
+            <div class="profile-actions">
+                <a href="dashboard.html" class="btn-back">← Назад к привычкам</a>
+                <button class="btn-save" id="saveAvatarBtn">💾 Сохранить аватар</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/profile.js"></script>
+</body>
+</html>

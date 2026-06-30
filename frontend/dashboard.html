@@ -22,7 +22,7 @@
 
         .dashboard-header {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             border-bottom: 2px solid #f0f0f0;
             padding-bottom: 15px;
@@ -118,27 +118,94 @@
             color: #999;
             padding: 30px;
         }
+        .progress-container {
+            margin: 15px 0 20px 0;
+            background: #f0f0f0;
+            border-radius: 12px;
+            padding: 15px 20px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 24px;
+            background: #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            transition: width 0.5s ease-in-out;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 30px;
+        }
+
+        #xpProgressText {
+            display: block;
+            margin-top: 8px;
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        /* Анимация при заполнении */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .progress-fill.animating {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+            background-size: 200% auto;
+            animation: shimmer 1.5s linear infinite;
+        }
     </style>
 </head>
 <body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">🎮 Habit RPG</div>
+            <nav class="nav-links">
+                <a href="dashboard.html" class="active">📊 Дашборд</a>
+                <a href="profile.html">👤 Профиль</a>
+            </nav>
+            <button onclick="logoutUser()" class="btn-logout">Выйти</button>
+        </div>
+    </header>
     <div class="dashboard-container">
         <div class="dashboard-box">
             <!-- Шапка -->
             <div class="dashboard-header">
                 <div class="user-info">
-                    <div class="avatar">😊</div>
+                    <div class="avatar" id="characterAvatar">😊</div>
                     <div>
                         <h2 id="usernameDisplay">Пользователь</h2>
                         <div class="user-stats">
                             <span>🏆 Уровень <span id="levelDisplay">1</span></span>
                             <span>⭐ Опыт <span id="xpDisplay">0</span></span>
-                            <span>🪙 Золото <span id="goldDisplay">0</span></span>
+                            <span>💵 Золото <span id="goldDisplay">0</span></span>
                         </div>
                     </div>
                 </div>
-                <button class="btn-logout" onclick="logoutUser()">Выйти</button>
             </div>
-
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="xpProgress" style="width: 0%;"></div>
+                </div>
+                <span id="xpProgressText">0% до следующего уровня</span>
+            </div>
             <!-- Список привычек -->
             <div class="habits-list" id="habitsList">
                 <div class="empty-state">
@@ -150,12 +217,6 @@
             <!-- Кнопка добавления -->
             <button class="add-habit-btn" id="addHabitBtn">➕ Добавить привычку</button>
         </div>
-    </div>
-    <div class="progress-container">
-        <div class="progress-bar">
-            <div class="progress-fill" id="xpProgress" style="width: 0%;"></div>
-        </div>
-        <span id="xpProgressText">0% до следующего уровня</span>
     </div>
 
     <script src="js/api.js"></script>
