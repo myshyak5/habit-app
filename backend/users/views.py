@@ -55,3 +55,28 @@ class UserProfileView(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
+    
+class UpdateAvatarView(generics.UpdateAPIView):
+    """Обновление аватара пользователя"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_object(self):
+        return self.request.user
+    
+    def patch(self, request, *args, **kwargs):
+        user = self.get_object()
+        avatar_skin = request.data.get('avatar_skin')
+        
+        if not avatar_skin:
+            return Response(
+                {'error': 'Поле avatar_skin обязательно'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user.avatar_skin = avatar_skin
+        user.save()
+        
+        return Response({
+            'status': 'success',
+            'avatar_skin': user.avatar_skin
+        }, status=status.HTTP_200_OK)
