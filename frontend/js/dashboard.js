@@ -3,10 +3,193 @@
 // Загрузка дашборда
 document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
+    
+    // Загружаем ежедневные задания
+    loadDailyQuests();
+    checkDailyReset();
+    
     updateUserInfo();
     await loadHabits();
+    
+    // Отображаем задания
+    renderDailyQuests();
 });
 
+// =============================================
+// 📋 ЕЖЕДНЕВНЫЕ ЗАДАНИЯ
+// =============================================
+
+const DAILY_QUESTS = [
+    { id: 1, name: '💪 Выполнить 3 привычки', description: 'Отметь 3 любые привычки сегодня', target: 3, rewardGold: 10, rewardXp: 20 },
+    { id: 2, name: '📚 Выполнить сложную привычку', description: 'Выполни привычку с наградой 40+ XP', target: 1, rewardGold: 15, rewardXp: 30 },
+    { id: 3, name: '🔥 Серия из 5 привычек', description: 'Выполни 5 привычек подряд без пропусков', target: 5, rewardGold: 20, rewardXp: 40 },
+];
+
+// Текущее состояние заданий (загружается из localStorage)
+let dailyQuestsProgress = {};
+let dailyQuestsCompleted = false;
+let lastQuestDate = '';
+
+// Загрузить прогресс заданий
+function loadDailyQuests() {
+    const saved = localStorage.getItem('dailyQuests');
+    if (saved) {
+        const data = JSON.parse(saved);
+        dailyQuestsProgress = data.progress || {};
+        dailyQuestsCompleted = data.completed || false;
+        lastQuestDate = data.date || '';
+    } else {
+        // Инициализация
+        dailyQuestsProgress = {};
+        dailyQuestsCompleted = false;
+        lastQuestDate = '';
+    }
+}
+
+// Сохранить прогресс заданий
+function saveDailyQuests() {
+    localStorage.setItem('dailyQuests', JSON.stringify({
+        progress: dailyQuestsProgress,
+        completed: dailyQuestsCompleted,
+        date: lastQuestDate
+    }));
+}
+
+// Проверить, нужно ли сбросить задания (новый день)
+function checkDailyReset() {
+    const today = new Date().toISOString().split('T')[0];
+    if (lastQuestDate !== today) {
+        // Новый день — сбрасываем прогресс
+        dailyQuestsProgress = {};
+        dailyQuestsCompleted = false;
+        lastQuestDate = today;
+        saveDailyQuests();
+        return true;
+    }
+    return false;
+}
+
+// Обновить прогресс задания
+function updateQuestProgress(habitXp) {
+    if (dailyQuestsCompleted) return;
+
+    // 1. Задание "Выполнить 3 привычки"
+    const quest1 = DAILY_QUESTS[0];
+    if (!dailyQuestsProgress[quest1.id]) {
+        dailyQuestsProgress[quest1.id] = 0;
+    }
+    dailyQuestsProgress[quest1.id] += 1;
+
+    // 2. Задание "Выполнить сложную привычку"
+    if (habitXp >= 40) {
+        const quest2 = DAILY_QUESTS[1];
+        if (!dailyQuestsProgress[quest2.id]) {
+            dailyQuestsProgress[quest2.id] = 0;
+        }
+        dailyQuestsProgress[quest2.id] += 1;
+    }
+
+    // 3. Задание "Серия из 5 привычек"
+    // Проверяем стрик (серию) — считаем, сколько дней подряд выполнено
+    const quest3 = DAILY_QUESTS[2];
+    if (!dailyQuestsProgress[quest3.id]) {
+        dailyQuestsProgress[quest3.id] = 0;
+    }
+    // Логика стрика: увеличиваем только если сегодня уже выполняли
+    // Простая версия: считаем общее количество выполненных за сегодня
+    // (это не совсем стрик, но для MVP подойдёт)
+    const totalToday = document.querySelectorAll('.habit-item .habit-checkbox:checked').length;
+    dailyQuestsProgress[quest3.id] = totalToday;
+
+    // Проверяем, выполнены ли все задания
+    checkAllQuestsCompleted();
+    saveDailyQuests();
+}
+
+// Проверить, все ли задания выполнены
+function checkAllQuestsCompleted() {
+    if (dailyQuestsCompleted) return;
+    
+    const allCompleted = DAILY_QUESTS.every(quest => {
+        const progress = dailyQuestsProgress[quest.id] || 0;
+        return progress >= quest.target;
+    });
+    
+    if (allCompleted) {
+        dailyQuestsCompleted = true;
+        // Начисляем бонус за все задания
+        const totalGold = DAILY_QUESTS.reduce((sum, q) => sum + q.rewardGold, 0);
+        const totalXp = DAILY_QUESTS.reduce((sum, q) => sum + q.rewardXp, 0);
+        
+        // Начисляем награду
+        const user = getUserData();
+        const newGold = (user.gold || 0) + totalGold;
+        const newXp = (user.experience || 0) + totalXp;
+        localStorage.setItem('gold', newGold);
+        localStorage.setItem('experience', newXp);
+        
+        showNotification(`🎉 Все ежедневные задания выполнены! +${totalGold} 💵 и +${totalXp} XP`, 'success');
+        updateUserInfo();
+        saveDailyQuests();
+    }
+}
+
+// Получить прогресс заданий для отображения
+function getDailyQuestsProgress() {
+    checkDailyReset();
+    return DAILY_QUESTS.map(quest => ({
+        ...quest,
+        progress: dailyQuestsProgress[quest.id] || 0,
+        completed: dailyQuestsProgress[quest.id] >= quest.target || dailyQuestsCompleted
+    }));
+}
+function renderDailyQuests() {
+    const container = document.getElementById('dailyQuestsList');
+    if (!container) return;
+
+    const quests = getDailyQuestsProgress();
+    
+    if (quests.length === 0) {
+        container.innerHTML = '<p style="color:#999;text-align:center;font-size:14px;">Нет заданий на сегодня</p>';
+        return;
+    }
+
+    const allCompleted = quests.every(q => q.completed);
+
+    container.innerHTML = quests.map(quest => {
+        const progress = quest.progress;
+        const target = quest.target;
+        const percent = Math.min((progress / target) * 100, 100);
+        const isCompleted = quest.completed;
+
+        return `
+            <div class="daily-quest-item ${isCompleted ? 'completed' : ''}">
+                <div class="quest-name">${quest.name}</div>
+                <div class="quest-description">${quest.description}</div>
+                <div class="quest-progress">
+                    <div class="quest-progress-bar">
+                        <div class="quest-progress-fill" style="width: ${percent}%;"></div>
+                    </div>
+                    <span style="font-size:12px;color:#666;min-width:30px;">${progress}/${target}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
+                    <div class="quest-reward">+${quest.rewardGold} 💵 +${quest.rewardXp} XP</div>
+                    <div class="quest-status">${isCompleted ? '✅' : '⏳'}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    if (allCompleted) {
+        const totalGold = DAILY_QUESTS.reduce((sum, q) => sum + q.rewardGold, 0);
+        const totalXp = DAILY_QUESTS.reduce((sum, q) => sum + q.rewardXp, 0);
+        container.innerHTML += `
+            <div style="text-align:center;padding:12px;background:#d4edda;border-radius:10px;margin-top:10px;color:#155724;font-weight:600;font-size:13px;">
+                🎉 Все выполнено! +${totalGold} 💵 +${totalXp} XP
+            </div>
+        `;
+    }
+}
 function checkLevelUp(oldLevel, newLevel) {
     if (newLevel > oldLevel) {
         animateCharacter('levelUp', 2500);
@@ -138,8 +321,11 @@ async function toggleHabitHandler(habitId) {
 
         if (isCompleted) {
             animateCharacter('veryHappy', 1500);
-            // ✅ НАЧИСЛЯЕМ XP ТОЛЬКО ЗДЕСЬ
             showNotification(`✅ Привычка выполнена! +${habit.xp_reward} XP`, 'success');
+            
+            // 🔥 ОБНОВЛЯЕМ ЕЖЕДНЕВНЫЕ ЗАДАНИЯ
+            updateQuestProgress(habit.xp_reward);
+            renderDailyQuests();
         } else {
             animateCharacter('sad', 1500);
             showNotification('⏳ Привычка отменена', 'info');
@@ -166,14 +352,43 @@ async function refreshUserData() {
 }
 
 async function deleteHabitHandler(habitId) {
-    if (!confirm('Вы уверены, что хотите удалить эту привычку?')) return;
+    if (!confirm('🗑️ Вы уверены, что хотите удалить эту привычку?')) return;
 
     try {
+        const habits = await getHabits();
+        const habit = habits.find(h => h.id === habitId);
+        
+        if (!habit) {
+            showNotification('❌ Привычка не найдена', 'error');
+            return;
+        }
+
+        const completedCount = (habit.completed_dates || []).length;
+        const totalXp = completedCount * (habit.xp_reward || 10);
+
         await deleteHabit(habitId);
+
+        if (totalXp > 0) {
+            // Обновляем локальные данные
+            const user = getUserData();
+            const newXp = Math.max(0, user.experience - totalXp);
+            localStorage.setItem('experience', newXp);
+            
+            const newLevel = Math.floor(newXp / 100) + 1;
+            localStorage.setItem('level', Math.max(1, newLevel));
+            
+            await refreshUserData();
+            updateUserInfo();
+            showNotification('🗑️ Привычка удалена!', 'info');
+        } else {
+            showNotification('✅ Привычка удалена!', 'success');
+        }
+        
         await loadHabits();
-        showNotification('Привычка удалена', 'success');
+        
     } catch (error) {
-        showNotification('Ошибка: ' + error.message, 'error');
+        console.error('Ошибка удаления:', error);
+        showNotification('❌ Ошибка: ' + error.message, 'error');
     }
 }
 
