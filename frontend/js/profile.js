@@ -120,84 +120,107 @@ function createChart(labels, data) {
     const ctx = document.getElementById('activityChart');
     if (!ctx) return;
     
-    // Если график уже существует — уничтожаем его
     if (activityChart) {
         activityChart.destroy();
+        activityChart = null;
     }
+
+    const hasData = data.some(value => value > 0);
     
-    const colors = [
-        'rgba(102, 126, 234, 0.7)',
-        'rgba(102, 126, 234, 0.7)',
-        'rgba(102, 126, 234, 0.7)',
-        'rgba(102, 126, 234, 0.7)',
-        'rgba(102, 126, 234, 0.7)',
-        'rgba(102, 126, 234, 0.7)',
-        'rgba(102, 126, 234, 0.7)'
-    ];
-    
-    // Подсвечиваем максимальное значение
-    const maxValue = Math.max(...data);
-    if (maxValue > 0) {
-        const maxIndex = data.indexOf(maxValue);
-        colors[maxIndex] = 'rgba(118, 75, 162, 0.9)';
+    if (!hasData) {
+        const parent = ctx.parentElement;
+        if (parent) {
+            parent.innerHTML = `
+                <div style="text-align:center;color:#999;padding:30px 20px;">
+                    <p style="font-size:24px;">📊</p>
+                    <p>Нет выполненных привычек за последнюю неделю</p>
+                    <p style="font-size:12px;">Начните выполнять привычки, чтобы увидеть график!</p>
+                </div>
+            `;
+        }
+        return;
     }
-    
-    activityChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Выполнено привычек',
-                data: data,
-                backgroundColor: colors,
-                borderColor: 'rgba(102, 126, 234, 1)',
-                borderWidth: 2,
-                borderRadius: 8,
-                barPercentage: 0.7,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `${context.parsed.y} привычек`;
-                        }
-                    }
-                }
+
+    try {
+        const maxValue = Math.max(...data);
+
+        activityChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Выполнено привычек',
+                    data: data,
+                    backgroundColor: data.map(value => 
+                        value === maxValue && maxValue > 0
+                            ? '#764ba2'
+                            : '#667eea'
+                    ),
+                    borderColor: data.map(value => 
+                        value === maxValue && maxValue > 0
+                            ? '#764ba2'
+                            : '#667eea'
+                    ),
+                    borderWidth: 2,
+                    borderRadius: {
+                        topLeft: 8,      // ← ЗАКРУГЛЕНИЕ СВЕРХУ СЛЕВА
+                        topRight: 8,     // ← ЗАКРУГЛЕНИЕ СВЕРХУ СПРАВА
+                        bottomLeft: 0,   // ← БЕЗ ЗАКРУГЛЕНИЯ СНИЗУ
+                        bottomRight: 0   // ← БЕЗ ЗАКРУГЛЕНИЯ СНИЗУ
+                    },
+                    barPercentage: 0.7,
+                    categoryPercentage: 0.8,
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1,
-                        font: {
-                            size: 12
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(255,255,255,0.95)',
+                        titleColor: '#333',
+                        bodyColor: '#667eea',
+                        borderColor: '#667eea',
+                        borderWidth: 2,
+                        cornerRadius: 8,
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.parsed.y} привычек`;
+                            }
                         }
-                    },
-                    grid: {
-                        color: 'rgba(0,0,0,0.05)'
                     }
                 },
-                x: {
-                    grid: {
-                        display: false
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { 
+                            stepSize: 1,
+                            color: '#888',
+                            font: { size: 12 }
+                        },
+                        grid: { 
+                            color: 'rgba(102, 126, 234, 0.1)',
+                            drawBorder: false
+                        }
                     },
-                    ticks: {
-                        font: {
-                            size: 12,
-                            weight: 'bold'
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: '#555',
+                            font: { 
+                                size: 13,
+                                weight: '600'
+                            }
                         }
                     }
                 }
             }
-        }
-    });
+        });
+    } catch (error) {
+        console.error('Ошибка создания графика:', error);
+    }
 }
 
 // =============================================
