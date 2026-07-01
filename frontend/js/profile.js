@@ -6,7 +6,18 @@ let activityChart = null;
 // Текущий выбранный аватар
 let selectedAvatar = '😊';
 
-// Загрузка страницы
+// =============================================
+// 📊 РАСЧЁТ ОПЫТА ДЛЯ УРОВНЯ
+// =============================================
+
+function getXpForLevel(level) {
+    return 100 + (level - 1) * 25;
+}
+
+// =============================================
+// 🚀 ЗАГРУЗКА СТРАНИЦЫ
+// =============================================
+
 document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
     
@@ -15,12 +26,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     updateProfile(user);
     highlightSelectedAvatar(selectedAvatar);
+    loadOwnedSkinsIntoSelector();
+    
     await loadProfileStats();
     await loadChartData();
 });
 
 // =============================================
-// 📊 ПРОФИЛЬ
+// 👤 ОБНОВЛЕНИЕ ПРОФИЛЯ
 // =============================================
 
 function updateProfile(user) {
@@ -29,34 +42,114 @@ function updateProfile(user) {
     document.getElementById('profileXP').textContent = user.experience;
     document.getElementById('profileGold').textContent = user.gold;
     document.getElementById('profileAvatar').textContent = user.avatar || '😊';
-    
-    // 🔥 ОБНОВЛЯЕМ АВАТАР НА ДАШБОРДЕ
     updateAvatarOnDashboard(user.avatar || '😊');
-    
-    // Прогресс-бар
-    const xpPerLevel = 100;
-    const currentLevelXP = user.experience % xpPerLevel;
-    const progressPercent = (currentLevelXP / xpPerLevel) * 100;
-    
-    const progressFill = document.getElementById('profileProgress');
-    const progressText = document.getElementById('profileProgressText');
-    
-    if (progressFill) {
-        progressFill.style.width = Math.min(progressPercent, 100) + '%';
-    }
-    if (progressText) {
-        const xpNeeded = xpPerLevel - currentLevelXP;
-        progressText.textContent = `${Math.round(progressPercent)}% до следующего уровня (осталось ${xpNeeded} XP)`;
-    }
 }
 
-// 🔥 ОБНОВЛЕНИЕ АВАТАРА НА ДАШБОРДЕ
 function updateAvatarOnDashboard(emoji) {
     const avatarElement = document.getElementById('characterAvatar');
     if (avatarElement) {
         avatarElement.textContent = emoji;
     }
 }
+
+// =============================================
+// 🎨 АВАТАР В ПРОФИЛЕ
+// =============================================
+
+function highlightSelectedAvatar(avatar) {
+    const options = document.querySelectorAll('.avatar-option');
+    options.forEach(option => {
+        option.classList.toggle('selected', option.dataset.avatar === avatar);
+    });
+}
+
+// Обработчик клика по стандартным аватарам
+document.querySelectorAll('.avatar-option:not(.owned-skin)').forEach(option => {
+    option.addEventListener('click', function() {
+        selectedAvatar = this.dataset.avatar;
+        highlightSelectedAvatar(selectedAvatar);
+        document.getElementById('profileAvatar').textContent = selectedAvatar;
+    });
+});
+
+// =============================================
+// 🎨 ЗАГРУЗКА КУПЛЕННЫХ СКИНОВ
+// =============================================
+
+function loadOwnedSkinsIntoSelector() {
+    const container = document.getElementById('avatarSelector');
+    if (!container) return;
+
+    // Удаляем старые купленные скины
+    container.querySelectorAll('.owned-skin').forEach(el => el.remove());
+
+    const saved = localStorage.getItem('userSkins');
+    let ownedSkinIds = [];
+    if (saved) {
+        ownedSkinIds = JSON.parse(saved);
+    }
+
+    const skins = window.SKINS || [
+        { id: 1, emoji: '🐹', name: 'Мышь', price: 200 },
+        { id: 2, emoji: '🐼', name: 'Панда', price: 250 },
+        { id: 3, emoji: '💃', name: 'Танцор', price: 300 },
+        { id: 4, emoji: '🦖', name: 'Динозавр', price: 350 },
+        { id: 5, emoji: '🐙', name: 'Осьминог', price: 400 },
+        { id: 6, emoji: '🛡️', name: 'Рыцарь', price: 450 },
+        { id: 7, emoji: '🦜', name: 'Попугай', price: 500 },
+        { id: 8, emoji: '👽', name: 'Пришелец', price: 550 },
+    ];
+
+    const ownedSkins = skins.filter(skin => ownedSkinIds.includes(skin.id));
+    const currentAvatar = localStorage.getItem('avatar') || '😊';
+
+    ownedSkins.forEach(skin => {
+        const option = document.createElement('div');
+        option.className = `avatar-option owned-skin ${skin.emoji === currentAvatar ? 'selected' : ''}`;
+        option.dataset.avatar = skin.emoji;
+        option.textContent = skin.emoji;
+        option.title = skin.name;
+        
+        // ✅ ТОТ ЖЕ ОБРАБОТЧИК, ЧТО И У СТАНДАРТНЫХ АВАТАРОВ
+        option.addEventListener('click', function() {
+            selectedAvatar = this.dataset.avatar;
+            highlightSelectedAvatar(selectedAvatar);
+            document.getElementById('profileAvatar').textContent = selectedAvatar;
+        });
+        
+        container.appendChild(option);
+    });
+}
+
+// =============================================
+// 💾 СОХРАНЕНИЕ АВАТАРА (ОДНА КНОПКА ДЛЯ ВСЕХ)
+// =============================================
+
+document.getElementById('saveAvatarBtn')?.addEventListener('click', async function() {
+    try {
+        await apiRequest('/user/update_avatar/', 'PATCH', {
+            avatar_skin: selectedAvatar
+        });
+        
+        localStorage.setItem('avatar', selectedAvatar);
+        const user = getUserData();
+        user.avatar = selectedAvatar;
+        updateProfile(user);
+        highlightSelectedAvatar(selectedAvatar);
+        loadOwnedSkinsIntoSelector();
+        
+        showNotification('✅ Аватар сохранён на сервере!', 'success');
+    } catch (error) {
+        localStorage.setItem('avatar', selectedAvatar);
+        const user = getUserData();
+        user.avatar = selectedAvatar;
+        updateProfile(user);
+        highlightSelectedAvatar(selectedAvatar);
+        loadOwnedSkinsIntoSelector();
+        showNotification('✅ Аватар сохранён локально!', 'success');
+        console.warn('Серверный API для смены аватара не найден, сохранено в localStorage');
+    }
+});
 
 // =============================================
 // 📊 СТАТИСТИКА
@@ -215,45 +308,3 @@ function createChart(labels, data) {
         console.error('Ошибка создания графика:', error);
     }
 }
-
-// =============================================
-// 🎨 АВАТАР В ПРОФИЛЕ
-// =============================================
-
-function highlightSelectedAvatar(avatar) {
-    const options = document.querySelectorAll('.avatar-option');
-    options.forEach(option => {
-        option.classList.toggle('selected', option.dataset.avatar === avatar);
-    });
-}
-
-document.querySelectorAll('.avatar-option').forEach(option => {
-    option.addEventListener('click', function() {
-        selectedAvatar = this.dataset.avatar;
-        highlightSelectedAvatar(selectedAvatar);
-        document.getElementById('profileAvatar').textContent = selectedAvatar;
-    });
-});
-
-// Сохранение аватара
-document.getElementById('saveAvatarBtn')?.addEventListener('click', async function() {
-    try {
-        await apiRequest('/user/update_avatar/', 'PATCH', {
-            avatar_skin: selectedAvatar
-        });
-        
-        localStorage.setItem('avatar', selectedAvatar);
-        const user = getUserData();
-        user.avatar = selectedAvatar;
-        updateProfile(user);
-        
-        showNotification('✅ Аватар сохранён на сервере!', 'success');
-    } catch (error) {
-        localStorage.setItem('avatar', selectedAvatar);
-        const user = getUserData();
-        user.avatar = selectedAvatar;
-        updateProfile(user);
-        showNotification('✅ Аватар сохранён локально!', 'success');
-        console.warn('Серверный API для смены аватара не найден, сохранено в localStorage');
-    }
-});

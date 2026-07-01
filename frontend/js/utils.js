@@ -1,10 +1,59 @@
 // frontend/js/utils.js
 
 // Показать уведомление
+// frontend/js/utils.js
+
 function showNotification(message, type = 'info') {
-    // Простая реализация через alert
-    // В будущем можно заменить на красивое всплывающее окно
-    alert(message);
+    const colors = {
+        success: '#2ecc71',
+        error: '#e74c3c',
+        info: '#3498db',
+        warning: '#f39c12'
+    };
+    
+    // Удаляем старые уведомления
+    const oldNotifications = document.querySelectorAll('.notification');
+    oldNotifications.forEach(el => el.remove());
+    
+    // Создаём новое уведомление
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        padding: 15px 25px;
+        background: ${colors[type] || colors.info};
+        color: white;
+        border-radius: 10px;
+        font-weight: 600;
+        z-index: 9999;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        max-width: 400px;
+        font-size: 14px;
+        transform: translateX(120%);           /* ← Начало: за экраном справа */
+        opacity: 0;
+        transition: transform 0.4s ease, opacity 0.4s ease;
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Принудительный рефлоу (чтобы анимация сработала)
+    void notification.offsetHeight;
+    
+    // Появление: выезжает слева
+    notification.style.transform = 'translateX(0)';
+    notification.style.opacity = '1';
+    
+    // Автоматическое скрытие через 2.5 секунды
+    setTimeout(() => {
+        // Уезжает вправо
+        notification.style.transform = 'translateX(120%)';
+        notification.style.opacity = '0';
+        
+        // Удаляем после анимации
+        setTimeout(() => notification.remove(), 400);
+    }, 2500);
 }
 
 // Форматирование даты

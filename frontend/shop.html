@@ -92,6 +92,8 @@
             display: inline-block;
             width: 100%;
             box-sizing: border-box;
+            min-height: 24px;
+            line-height: 1.4;
         }
 
         /* ===== КНОПКИ ===== */
@@ -108,7 +110,6 @@
             letter-spacing: 0.3px;
         }
 
-        /* 🔵 Можно купить */
         .shop-item .btn-buy:not(:disabled):not(.owned):not(.selected) {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -120,7 +121,6 @@
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
-        /* 🔵 Выбран */
         .shop-item .btn-buy.selected {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -128,7 +128,6 @@
             cursor: default;
         }
 
-        /* 🟢 Выбрать (куплен) */
         .shop-item .btn-buy.owned:not(.selected) {
             background: #34c759;
             color: white;
@@ -141,7 +140,6 @@
             box-shadow: 0 6px 20px rgba(52, 199, 89, 0.4);
         }
 
-        /* ⛔ Не хватает (серая) */
         .shop-item .btn-buy:disabled {
             background: #d1d5db;
             color: #6b7280;
@@ -193,8 +191,6 @@
                 <h1 class="shop-title">🛒 Магазин скинов</h1>
                 <div class="shop-gold">💵 <span id="shopGold">0</span></div>
             </div>
-
-            <div id="shopMessage" style="display:none;padding:12px;border-radius:10px;margin-bottom:15px;"></div>
 
             <div class="shop-grid" id="shopGrid">
                 <!-- Товары загружаются через JS -->

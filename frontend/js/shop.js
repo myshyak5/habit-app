@@ -4,9 +4,8 @@
 // 🛒 МАГАЗИН СКИНОВ
 // =============================================
 
-// Список доступных скинов
 const SKINS = [
-    { id: 1, emoji: '🐭', name: 'Мышь', price: 200 },
+    { id: 1, emoji: '🐹', name: 'Хомяк', price: 200 },
     { id: 2, emoji: '🐼', name: 'Панда', price: 250 },
     { id: 3, emoji: '💃', name: 'Танцор', price: 300 },
     { id: 4, emoji: '🦖', name: 'Динозавр', price: 350 },
@@ -16,11 +15,13 @@ const SKINS = [
     { id: 8, emoji: '👽', name: 'Пришелец', price: 550 },
 ];
 
-// Текущий выбранный скин
 let selectedSkin = null;
 let userSkins = [];
 
-// Загрузка страницы
+// =============================================
+// 🚀 ЗАГРУЗКА СТРАНИЦЫ
+// =============================================
+
 document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
     
@@ -31,7 +32,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 function updateGold(gold) {
-    document.getElementById('shopGold').textContent = gold || 0;
+    const el = document.getElementById('shopGold');
+    if (el) el.textContent = gold || 0;
 }
 
 function loadUserSkins() {
@@ -46,7 +48,7 @@ function loadUserSkins() {
     const currentAvatar = localStorage.getItem('avatar');
     if (currentAvatar) {
         const currentSkin = SKINS.find(s => s.emoji === currentAvatar);
-        selectedSkin = currentSkin ? currentSkin.id : null;  // ← НЕ ВЫБИРАЕМ ПЕРВЫЙ
+        selectedSkin = currentSkin ? currentSkin.id : null;
     } else {
         selectedSkin = null;
     }
@@ -62,10 +64,23 @@ function saveUserSkins() {
 
 function renderShop() {
     const grid = document.getElementById('shopGrid');
-    if (!grid) return;
+    if (!grid) {
+        console.warn('❌ shopGrid не найден');
+        return;
+    }
 
     const user = getUserData();
     const gold = user.gold || 0;
+
+    if (SKINS.length === 0) {
+        grid.innerHTML = `
+            <div class="shop-empty">
+                <span class="emoji">🛒</span>
+                <p>Скины временно недоступны</p>
+            </div>
+        `;
+        return;
+    }
 
     grid.innerHTML = SKINS.map(skin => {
         const isOwned = userSkins.includes(skin.id);
@@ -101,7 +116,7 @@ function renderShop() {
             <div class="shop-item ${isOwned ? 'owned' : ''} ${isSelected ? 'selected' : ''}">
                 <span class="shop-item-emoji">${skin.emoji}</span>
                 <div class="shop-item-name">${skin.name}</div>
-                ${hintText ? `<div class="shop-item-hint">${hintText}</div>` : ''}
+                ${hintText ? `<div class="shop-item-hint">${hintText}</div>` : '<div class="shop-item-hint"></div>'}
                 <button 
                     class="${buttonClass}" 
                     onclick="handleShopAction(${skin.id})"
@@ -174,7 +189,6 @@ async function selectSkin(skinId) {
     selectedSkin = skinId;
     localStorage.setItem('avatar', skin.emoji);
     
-    // 🔥 ОТПРАВЛЯЕМ НА СЕРВЕР
     try {
         await apiRequest('/user/update_avatar/', 'PATCH', {
             avatar_skin: skin.emoji
@@ -189,7 +203,6 @@ async function selectSkin(skinId) {
     showMessage(`✅ Скин "${skin.name}" выбран!`, 'success');
 }
 
-// 🔥 Обновление аватара на дашборде
 function updateAvatarOnDashboard(emoji) {
     const avatarElement = document.getElementById('characterAvatar');
     if (avatarElement) {
@@ -198,22 +211,62 @@ function updateAvatarOnDashboard(emoji) {
 }
 
 // =============================================
-// 💬 СООБЩЕНИЯ
+// 💬 ПЛАВАЮЩИЕ УВЕДОМЛЕНИЯ (РАБОЧАЯ ВЕРСИЯ)
 // =============================================
 
+let messageTimeout = null;
+
 function showMessage(text, type = 'info') {
-    const msg = document.getElementById('shopMessage');
-    if (!msg) return;
+    // Удаляем старые уведомления
+    document.querySelectorAll('.shop-notification').forEach(el => el.remove());
     
-    msg.style.display = 'block';
-    msg.textContent = text;
-    msg.style.background = type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#cce5ff';
-    msg.style.color = type === 'success' ? '#155724' : type === 'error' ? '#721c24' : '#004085';
-    msg.style.border = `1px solid ${type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : '#b8daff'}`;
+    if (messageTimeout) {
+        clearTimeout(messageTimeout);
+        messageTimeout = null;
+    }
+
+    const colors = {
+        success: '#2ecc71',
+        error: '#e74c3c',
+        info: '#3498db',
+        warning: '#f39c12'
+    };
+
+    const notification = document.createElement('div');
+    notification.className = 'shop-notification';
+    notification.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        padding: 15px 25px;
+        background: ${colors[type] || colors.info};
+        color: white;
+        border-radius: 10px;
+        font-weight: 600;
+        z-index: 9999;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        max-width: 400px;
+        font-size: 14px;
+        transform: translateX(120%);
+        opacity: 0;
+        transition: transform 0.4s ease, opacity 0.4s ease;
+    `;
+    notification.textContent = text;
+    document.body.appendChild(notification);
     
-    setTimeout(() => {
-        msg.style.display = 'none';
-    }, 3000);
+    // Принудительный рефлоу
+    void notification.offsetHeight;
+    
+    // Появление
+    notification.style.transform = 'translateX(0)';
+    notification.style.opacity = '1';
+
+    messageTimeout = setTimeout(() => {
+        notification.style.transform = 'translateX(120%)';
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 400);
+        messageTimeout = null;
+    }, 2500);
 }
 
 // =============================================
