@@ -319,11 +319,14 @@ async function toggleHabitHandler(habitId) {
         
         const isCompleted = completed_dates.includes(today);
 
+        // 🔥 АНИМАЦИЯ И УВЕДОМЛЕНИЕ СИНХРОННО
         if (isCompleted) {
+            // Сначала анимация (длится 1500 мс)
             animateCharacter('veryHappy', 1500);
+            // Уведомление показываем сразу, но оно само исчезнет через 2000 мс
             showNotification(`✅ Привычка выполнена! +${habit.xp_reward} XP`, 'success');
             
-            // 🔥 ОБНОВЛЯЕМ ЕЖЕДНЕВНЫЕ ЗАДАНИЯ
+            // Обновляем ежедневные задания
             updateQuestProgress(habit.xp_reward);
             renderDailyQuests();
         } else {
@@ -396,35 +399,16 @@ async function deleteHabitHandler(habitId) {
 // 🔥 АНИМАЦИЯ ПЕРСОНАЖА
 // =============================================
 
+let animationTimer = null;  // ← ГЛОБАЛЬНЫЙ ТАЙМЕР
+
 function animateCharacter(emotion = 'happy', duration = 1500) {
     const avatar = document.getElementById('characterAvatar');
-    if (!avatar) {
-        const fallbackAvatar = document.querySelector('.avatar');
-        if (!fallbackAvatar) return;
-        const emotions = {
-            happy: '😊',
-            veryHappy: '🤩',
-            levelUp: '🥳',
-            sad: '😢',
-            cool: '😎',
-            default: localStorage.getItem('avatar') || '😊'
-        };
-        fallbackAvatar.textContent = emotions[emotion] || emotions.default;
-        fallbackAvatar.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), font-size 0.3s ease';
-        fallbackAvatar.style.transform = 'scale(1.8) rotate(10deg)';
-        fallbackAvatar.style.fontSize = '55px';
-        setTimeout(() => {
-            fallbackAvatar.style.transform = 'scale(1) rotate(0deg)';
-            fallbackAvatar.style.fontSize = '40px';
-        }, 300);
-        if (emotion !== 'default') {
-            setTimeout(() => {
-                const savedAvatar = localStorage.getItem('avatar') || '😊';
-                fallbackAvatar.textContent = savedAvatar;
-                fallbackAvatar.style.transform = 'scale(1) rotate(0deg)';
-            }, duration);
-        }
-        return;
+    if (!avatar) return;
+
+    // 🔥 ОЧИЩАЕМ ПРЕДЫДУЩИЙ ТАЙМЕР
+    if (animationTimer) {
+        clearTimeout(animationTimer);
+        animationTimer = null;
     }
 
     const emotions = {
@@ -436,46 +420,36 @@ function animateCharacter(emotion = 'happy', duration = 1500) {
         default: localStorage.getItem('avatar') || '😊'
     };
 
-    avatar.textContent = emotions[emotion] || emotions.default;
-    avatar.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), font-size 0.3s ease';
-    avatar.style.transform = 'scale(1.8) rotate(10deg)';
-    avatar.style.fontSize = '55px';
+    // Сброс предыдущей анимации
+    avatar.style.transition = 'none';
+    avatar.style.transform = 'scale(1)';
+    avatar.style.fontSize = '40px';
+    
+    // Принудительный рефлоу
+    void avatar.offsetHeight;
 
+    // Применяем новую эмоцию
+    avatar.textContent = emotions[emotion] || emotions.default;
+    avatar.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), font-size 0.4s ease';
+    avatar.style.transform = 'scale(1.1) rotate(5deg)';
+    avatar.style.fontSize = '45px';
+
+    // Возврат в нормальное состояние (через 400 мс)
     setTimeout(() => {
+        avatar.style.transition = 'transform 0.3s ease, font-size 0.3s ease';
         avatar.style.transform = 'scale(1) rotate(0deg)';
         avatar.style.fontSize = '40px';
-    }, 300);
+    }, 400);
 
+    // Возврат к сохранённому аватару (через duration)
     if (emotion !== 'default') {
-        setTimeout(() => {
+        animationTimer = setTimeout(() => {
             const savedAvatar = localStorage.getItem('avatar') || '😊';
             avatar.textContent = savedAvatar;
             avatar.style.transform = 'scale(1) rotate(0deg)';
+            avatar.style.fontSize = '40px';
+            animationTimer = null;
         }, duration);
-    }
-}
-
-function showConfetti() {
-    const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd'];
-    for (let i = 0; i < 30; i++) {
-        const confetti = document.createElement('div');
-        confetti.className = 'confetti-piece';
-        confetti.style.cssText = `
-            position: fixed;
-            top: -10px;
-            left: ${Math.random() * 100}vw;
-            width: ${Math.random() * 10 + 5}px;
-            height: ${Math.random() * 10 + 5}px;
-            background: ${colors[Math.floor(Math.random() * colors.length)]};
-            border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
-            pointer-events: none;
-            z-index: 9999;
-            opacity: 1;
-            animation: confettiFall ${Math.random() * 2 + 2}s linear forwards;
-            animation-delay: ${Math.random() * 0.5}s;
-        `;
-        document.body.appendChild(confetti);
-        setTimeout(() => confetti.remove(), 3000);
     }
 }
 

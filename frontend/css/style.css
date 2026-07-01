@@ -466,3 +466,51 @@ body.landing-page {
     justify-content: center;
     margin-top: 25px;
 }
+@keyframes slideIn {
+    0% {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.notification,
+.shop-notification {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 10px;
+    font-weight: 600;
+    z-index: 9999;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    max-width: 400px;
+    animation: slideIn 0.3s ease;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    font-size: 14px;
+    color: white;
+}
+
+.notification-success,
+.shop-notification-success {
+    background: #2ecc71;
+}
+
+.notification-error,
+.shop-notification-error {
+    background: #e74c3c;
+}
+
+.notification-info,
+.shop-notification-info {
+    background: #3498db;
+}
+
+.notification-warning,
+.shop-notification-warning {
+    background: #f39c12;
+}

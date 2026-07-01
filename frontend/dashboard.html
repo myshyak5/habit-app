@@ -9,11 +9,10 @@
         /* ===== ОБЩИЙ КОНТЕЙНЕР ===== */
         .dashboard-wrapper {
             max-width: 1020px;
-            margin: 20px auto 0 auto;
+            margin: 20px auto;
             padding: 0 20px;
             display: flex;
-            gap: 15px;
-            align-items: stretch;
+            align-items: flex-start;
         }
 
         /* ===== ОСНОВНАЯ КОЛОНКА ===== */
@@ -30,10 +29,38 @@
             height: 100%;
         }
 
-        /* ===== БОКОВАЯ ПАНЕЛЬ ===== */
+        /* ===== КНОПКА ДОБАВЛЕНИЯ НАД СПИСКОМ ===== */
+        .add-habit-btn {
+            width: 100%;
+            padding: 12px;
+            background: #f0f0f0;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            transition: background 0.2s;
+            margin-bottom: 15px;
+        }
+
+        .add-habit-btn:hover {
+            background: #e8e8e8;
+        }
+
+        /* ===== СПИСОК ПРИВЫЧЕК ===== */
+        .habits-list {
+            margin-top: 10px;
+        }
+
+        /* ===== БОКОВАЯ ПАНЕЛЬ (ФИКСИРОВАННАЯ) ===== */
         .sidebar {
             flex: 0 0 280px;
             min-width: 0;
+            align-self: flex-start;
+            position: sticky;
+            height: fit-content;
+            max-height: calc(100vh - 110px);
+            overflow-y: auto;
         }
 
         .sidebar-box {
@@ -41,9 +68,6 @@
             padding: 20px;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            height: 100%;
-            position: sticky;
-            top: 90px;
         }
 
         .sidebar-box h3 {
@@ -116,6 +140,23 @@
             font-size: 16px;
             text-align: right;
         }
+
+        /* ===== СТИЛИ ДЛЯ СКРОЛЛА САЙДБАРА ===== */
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: #f0f0f0;
+            border-radius: 10px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+
+        /* ===== МОДАЛЬНОЕ ОКНО ===== */
         .modal {
             position: fixed;
             top: 0;
@@ -197,6 +238,7 @@
             font-size: 12px;
             color: #888;
         }
+
         /* ===== АДАПТИВ ===== */
         @media (max-width: 900px) {
             .dashboard-wrapper {
@@ -211,8 +253,6 @@
             .sidebar {
                 flex: 1;
                 width: 100%;
-            }
-            .sidebar-box {
                 position: static;
             }
         }
@@ -258,7 +298,8 @@
                     </div>
                     <span id="xpProgressText">0% до следующего уровня</span>
                 </div>
-
+                <!-- Кнопка добавления -->
+                <button class="add-habit-btn" id="addHabitBtn">➕ Добавить привычку</button>
                 <!-- Список привычек -->
                 <div class="habits-list" id="habitsList">
                     <div class="empty-state">
@@ -266,9 +307,6 @@
                         <p style="font-size:14px;">Нажмите кнопку ниже, чтобы добавить первую</p>
                     </div>
                 </div>
-
-                <!-- Кнопка добавления -->
-                <button class="add-habit-btn" id="addHabitBtn">➕ Добавить привычку</button>
             </div>
         </main>
 
@@ -283,7 +321,7 @@
         </aside>
     </div>
 
-    <!-- ===== МОДАЛЬНОЕ ОКНО (ПОЛНОЕ) ===== -->
+    <!-- ===== МОДАЛЬНОЕ ОКНО ===== -->
     <div id="addHabitModal" class="modal" style="display:none;">
         <div class="modal-content">
             <h3>➕ Новая привычка</h3>
