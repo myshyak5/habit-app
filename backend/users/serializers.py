@@ -28,7 +28,38 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """Сериализатор для данных пользователя с игровыми полями"""
+    xp_for_next_level = serializers.SerializerMethodField()
+    xp_remaining = serializers.SerializerMethodField()
+    xp_progress = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'experience', 'level', 'gold', 'health', 'avatar_skin')
-        read_only_fields = ('id', 'experience', 'level', 'gold', 'health')
+        fields = (
+            'id', 'username', 'email', 
+            'experience', 'level', 'gold', 'health', 'avatar_skin', 'owned_skins',
+            'xp_for_next_level', 'xp_remaining', 'xp_progress'
+        )
+        read_only_fields = (
+            'id', 'experience', 'level', 'gold', 'health', 
+            'xp_for_next_level', 'xp_remaining', 'xp_progress'
+        )
+    
+    def get_xp_for_next_level(self, obj):
+        """
+        Сколько XP нужно набрать ИМЕННО внутри текущего уровня, 
+        чтобы перейти на следующий (чистый шаг, например: 225 XP для 3-го уровня).
+        Фронтенд скажет спасибо — это максимальное значение для шкалы прогресса.
+        """
+        current_level_base_xp = obj.get_current_level_xp()
+        next_level_total_xp = obj.get_xp_for_next_level()
+        return next_level_total_xp - current_level_base_xp
+    
+    def get_xp_remaining(self, obj):
+        """Сколько суммарного XP осталось до следующего уровня"""
+        next_level_xp = obj.get_xp_for_next_level()
+        return max(0, next_level_xp - obj.experience)
+    
+    def get_xp_progress(self, obj):
+        """Прогресс внутри текущего уровня в процентах (0.0% - 100.0%)"""
+        return obj.get_xp_progress()

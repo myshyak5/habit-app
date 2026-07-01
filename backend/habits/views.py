@@ -41,32 +41,52 @@ class HabitViewSet(viewsets.ModelViewSet):
         # Если привычка ТОЛЬКО ЧТО выполнена (есть сегодня, не было раньше)
         if today in new_dates and today not in old_dates:
             xp = updated_instance.xp_reward
-            gold = xp // 2  # Половина опыта в золоте (целочисленное деление)
-            user.add_experience(xp)
+            gold = xp // 2  # Половина опыта в золоте
+            
+            # Сначала меняем золото прямо в объекте
             user.gold += gold
-        
-            user.save()
+            # add_experience пересчитает уровень, добавит золото за Level Up и сам вызовет .save()
+            user.add_experience(xp)
 
         # Если привычка ТОЛЬКО ЧТО отменена (была сегодня, теперь нет)
         elif today in old_dates and today not in new_dates:
             xp = updated_instance.xp_reward
-            gold = xp // 2  # Половина опыта в золоте
-            user.add_experience(-xp)
+            gold = xp // 2
+            
             user.gold = max(0, user.gold - gold)
-        
-            user.save()
+            # add_experience пересчитает уровень (вниз), заберет золото за Level Down и вызовет .save()
+            user.add_experience(-xp)
+            
         return Response(serializer.data)
 
     def perform_update(self, serializer):
         serializer.save()
 
     def destroy(self, request, *args, **kwargs):
-        """Удаление привычки (мягкое удаление)"""
+        """Удаление привычки (мягкое удаление) с откатом опыта и золота"""
         instance = self.get_object()
+        user = request.user
+    
+        # Рассчитываем, сколько опыта и золота было получено за эту привычку
+        completed_count = len(instance.completed_dates or [])
+    
+        if completed_count > 0:
+            xp_per_completion = instance.xp_reward
+            gold_per_completion = xp_per_completion // 2
+        
+            total_xp = completed_count * xp_per_completion
+            total_gold = completed_count * gold_per_completion
+        
+            # Сначала вычитаем золото
+            user.gold = max(0, user.gold - total_gold)
+            # Отнимаем опыт (внутри вызовется пересчет уровней и автоматический .save())
+            user.add_experience(-total_xp)
+    
+        # Мягкое удаление самой привычки
         instance.is_active = False
         instance.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
     
+        return Response(status=status.HTTP_204_NO_CONTENT)
     
     
 class SkinViewSet(viewsets.ReadOnlyModelViewSet):
@@ -83,8 +103,11 @@ class SkinViewSet(viewsets.ReadOnlyModelViewSet):
         skin = self.get_object()
         user = request.user
 
+        # Безопасная проверка списков
+        owned_skins_list = user.owned_skins if isinstance(user.owned_skins, list) else []
+
         # Проверяем, не куплен ли уже
-        if skin.id in (user.owned_skins or []):
+        if skin.id in owned_skins_list:
             return Response(
                 {'error': 'Этот скин уже куплен'}, 
                 status=status.HTTP_400_BAD_REQUEST
@@ -100,13 +123,8 @@ class SkinViewSet(viewsets.ReadOnlyModelViewSet):
         # Списываем золото
         user.gold -= skin.price
         
-        # Добавляем скин в список купленных
-        if user.owned_skins is None:
-            user.owned_skins = []
-        user.owned_skins.append(skin.id)
-        
-        # Автоматически активируем скин (если пользователь хочет)
-        # Но фронт сам вызовет activate, так что просто сохраняем
+        # Явное переприсваивание списка, чтобы Django зафиксировал изменения в JSONField
+        user.owned_skins = owned_skins_list + [skin.id]
         user.save()
 
         return Response({
@@ -121,8 +139,10 @@ class SkinViewSet(viewsets.ReadOnlyModelViewSet):
         skin = self.get_object()
         user = request.user
 
+        owned_skins_list = user.owned_skins if isinstance(user.owned_skins, list) else []
+
         # Проверяем, есть ли скин у пользователя
-        if skin.id not in (user.owned_skins or []):
+        if skin.id not in owned_skins_list:
             return Response(
                 {'error': 'Этот скин не куплен'}, 
                 status=status.HTTP_400_BAD_REQUEST
