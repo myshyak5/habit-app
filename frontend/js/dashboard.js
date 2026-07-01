@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 // =============================================
 // 📋 ЕЖЕДНЕВНЫЕ ЗАДАНИЯ
 // =============================================
+function getXpForLevel(level) {
+    return 100 + (level - 1) * 25;
+}
 
 const DAILY_QUESTS = [
     { id: 1, name: '💪 Выполнить 3 привычки', description: 'Отметь 3 любые привычки сегодня', target: 3, rewardGold: 10, rewardXp: 20 },
@@ -206,45 +209,9 @@ function checkLevelUp(oldLevel, newLevel) {
         }
     }
 }
-
-function updateUserInfo() {
-    const user = getUserData();
-    const oldLevel = parseInt(localStorage.getItem('oldLevel')) || user.level;
-    
-    document.getElementById('usernameDisplay').textContent = user.username;
-    document.getElementById('levelDisplay').textContent = user.level;
-    document.getElementById('xpDisplay').textContent = user.experience;
-    document.getElementById('goldDisplay').textContent = user.gold;
-    
-    const xpPerLevel = 100;
-    const currentLevelXP = user.experience % xpPerLevel;
-    const progressPercent = (currentLevelXP / xpPerLevel) * 100;
-    
-    const progressFill = document.getElementById('xpProgress');
-    const progressText = document.getElementById('xpProgressText');
-    
-    if (progressFill) {
-        progressFill.style.width = Math.min(progressPercent, 100) + '%';
-        if (progressPercent >= 100) {
-            progressFill.style.width = '100%';
-            progressFill.classList.add('animating');
-        } else {
-            progressFill.classList.remove('animating');
-        }
-    }
-    
-    if (progressText) {
-        const xpNeeded = xpPerLevel - currentLevelXP;
-        progressText.textContent = `${Math.round(progressPercent)}% до следующего уровня (осталось ${xpNeeded} XP)`;
-    }
-    
-    const avatarElement = document.getElementById('characterAvatar');
-    if (avatarElement) {
-        avatarElement.textContent = user.avatar || '😊';
-    }
-    checkLevelUp(oldLevel, user.level);
-    localStorage.setItem('oldLevel', user.level);
-}
+// =============================================
+// 📋 ЗАГРУЗКА ПРИВЫЧЕК
+// =============================================
 
 async function loadHabits() {
     const habitsList = document.getElementById('habitsList');
@@ -264,6 +231,9 @@ async function loadHabits() {
 
         habitsList.innerHTML = habits.map(habit => {
             const completed = isCompletedToday(habit.completed_dates);
+            const xpReward = habit.xp_reward || 10;
+            const goldReward = Math.floor(xpReward / 2); // Половина опыта в золоте
+            
             return `
                 <div class="habit-item" data-id="${habit.id}">
                     <div style="display:flex;align-items:center;gap:12px;">
@@ -277,7 +247,8 @@ async function loadHabits() {
                         ${habit.description ? `<span style="color:#999;font-size:12px;">${habit.description}</span>` : ''}
                     </div>
                     <div style="display:flex;align-items:center;gap:10px;">
-                        <span style="font-size:12px;color:#888;">+${habit.xp_reward} XP</span>
+                        <span style="font-size:12px;color:#888;">+${goldReward} 💵</span>
+                        <span style="font-size:12px;color:#888;">+${xpReward} XP</span>
                         <button 
                             onclick="deleteHabitHandler(${habit.id})" 
                             style="background:none;border:none;color:#ff4757;cursor:pointer;font-size:18px;"
@@ -292,6 +263,59 @@ async function loadHabits() {
     } catch (error) {
         showNotification('Ошибка загрузки привычек: ' + error.message, 'error');
     }
+}
+
+function updateUserInfo() {
+    const user = getUserData();
+    const oldLevel = parseInt(localStorage.getItem('oldLevel')) || user.level;
+    
+    document.getElementById('usernameDisplay').textContent = user.username;
+    document.getElementById('levelDisplay').textContent = user.level;
+    document.getElementById('xpDisplay').textContent = user.experience;
+    document.getElementById('goldDisplay').textContent = user.gold;
+    
+    const xpPerLevel = getXpForLevel(user.level);
+    const currentLevelXP = user.experience % xpPerLevel;
+    const progressPercent = (currentLevelXP / xpPerLevel) * 100;
+    
+    const progressFill = document.getElementById('xpProgress');
+    const progressText = document.getElementById('xpProgressText');
+    const percentSpan = document.querySelector('.progress-percent');
+    
+    if (progressFill) {
+        const percent = Math.min(progressPercent, 100);
+        progressFill.style.width = percent + '%';
+        if (percentSpan) {
+            percentSpan.textContent = Math.round(percent) + '%';
+        }
+        if (progressPercent >= 100) {
+            progressFill.classList.add('animating');
+        } else {
+            progressFill.classList.remove('animating');
+        }
+    }
+    
+    // 🔥 ОБНОВЛЯЕМ ПОДСКАЗКУ
+    const tooltipCurrent = document.getElementById('tooltipCurrentXP');
+    const tooltipTotal = document.getElementById('tooltipTotalXP');
+    if (tooltipCurrent) {
+        tooltipCurrent.textContent = currentLevelXP;
+    }
+    if (tooltipTotal) {
+        tooltipTotal.textContent = xpPerLevel;
+    }
+    
+    if (progressText) {
+        const xpNeeded = xpPerLevel - currentLevelXP;
+        progressText.textContent = `До следующего уровня необходимо ${xpNeeded} XP`;
+    }
+    
+    const avatarElement = document.getElementById('characterAvatar');
+    if (avatarElement) {
+        avatarElement.textContent = user.avatar || '😊';
+    }
+    checkLevelUp(oldLevel, user.level);
+    localStorage.setItem('oldLevel', user.level);
 }
 
 async function toggleHabitHandler(habitId) {
@@ -319,14 +343,16 @@ async function toggleHabitHandler(habitId) {
         
         const isCompleted = completed_dates.includes(today);
 
-        // 🔥 АНИМАЦИЯ И УВЕДОМЛЕНИЕ СИНХРОННО
+        // 🔥 АНИМАЦИЯ И УВЕДОМЛЕНИЕ
         if (isCompleted) {
-            // Сначала анимация (длится 1500 мс)
             animateCharacter('veryHappy', 1500);
-            // Уведомление показываем сразу, но оно само исчезнет через 2000 мс
-            showNotification(`✅ Привычка выполнена! +${habit.xp_reward} XP`, 'success');
             
-            // Обновляем ежедневные задания
+            // ✅ ОБЪЯВЛЯЕМ ПЕРЕМЕННУЮ ЗДЕСЬ
+            const xpReward = habit.xp_reward || 10;
+            const goldReward = Math.floor(xpReward / 2);
+            
+            showNotification(`✅ Привычка выполнена! +${xpReward} XP, +${goldReward} 💵`, 'success');
+            
             updateQuestProgress(habit.xp_reward);
             renderDailyQuests();
         } else {
@@ -367,22 +393,37 @@ async function deleteHabitHandler(habitId) {
         }
 
         const completedCount = (habit.completed_dates || []).length;
-        const totalXp = completedCount * (habit.xp_reward || 10);
+        const xpReward = habit.xp_reward || 10;
+        const totalXp = completedCount * xpReward;
+        const totalGold = completedCount * Math.floor(xpReward / 2);
 
         await deleteHabit(habitId);
 
-        if (totalXp > 0) {
-            // Обновляем локальные данные
+        if (totalXp > 0 || totalGold > 0) {
             const user = getUserData();
+            
+            // Списываем опыт
             const newXp = Math.max(0, user.experience - totalXp);
             localStorage.setItem('experience', newXp);
             
-            const newLevel = Math.floor(newXp / 100) + 1;
+            // Списываем золото
+            const newGold = Math.max(0, user.gold - totalGold);
+            localStorage.setItem('gold', newGold);
+            
+            // Пересчитываем уровень
+            let newLevel = 1;
+            let remainingXp = newXp;
+            while (true) {
+                const xpNeeded = getXpForLevel(newLevel);
+                if (remainingXp < xpNeeded) break;
+                remainingXp -= xpNeeded;
+                newLevel++;
+            }
             localStorage.setItem('level', Math.max(1, newLevel));
             
             await refreshUserData();
             updateUserInfo();
-            showNotification('🗑️ Привычка удалена!', 'info');
+            showNotification(`🗑️ Привычка удалена! Снято ${totalXp} XP и ${totalGold} 💵`, 'info');
         } else {
             showNotification('✅ Привычка удалена!', 'success');
         }
@@ -398,7 +439,33 @@ async function deleteHabitHandler(habitId) {
 // =============================================
 // 🔥 АНИМАЦИЯ ПЕРСОНАЖА
 // =============================================
+// =============================================
+// 🎉 КОНФЕТТИ
+// =============================================
 
+function showConfetti() {
+    const symbols = ['✦', '✧', '⭐', '✨', '❄️', '💫'];
+    const colors = ['#ffd93d', '#ff6b6b', '#48dbfb', '#ff9ff3', '#54a0ff', '#feca57'];
+    
+    for (let i = 0; i < 20; i++) {
+        const el = document.createElement('div');
+        el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+        el.style.cssText = `
+            position: fixed;
+            top: -20px;
+            left: ${Math.random() * 100}vw;
+            font-size: ${Math.random() * 18 + 18}px;
+            color: ${colors[Math.floor(Math.random() * colors.length)]};
+            pointer-events: none;
+            z-index: 9999;
+            animation: confettiFall ${Math.random() * 2 + 1.5}s linear forwards;
+            animation-delay: ${Math.random() * 0.5}s;
+            opacity: 0;
+        `;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 3500);
+    }
+}
 let animationTimer = null;  // ← ГЛОБАЛЬНЫЙ ТАЙМЕР
 
 function animateCharacter(emotion = 'happy', duration = 1500) {

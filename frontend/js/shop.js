@@ -5,7 +5,7 @@
 // =============================================
 
 const SKINS = [
-    { id: 1, emoji: '🐹', name: 'Мышь', price: 200 },
+    { id: 1, emoji: '🐹', name: 'Хомяк', price: 200 },
     { id: 2, emoji: '🐼', name: 'Панда', price: 250 },
     { id: 3, emoji: '💃', name: 'Танцор', price: 300 },
     { id: 4, emoji: '🦖', name: 'Динозавр', price: 350 },

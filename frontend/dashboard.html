@@ -294,9 +294,14 @@
                 <!-- Прогресс-бар -->
                 <div class="progress-container">
                     <div class="progress-bar">
-                        <div class="progress-fill" id="xpProgress" style="width: 0%;"></div>
+                        <div class="progress-fill" id="xpProgress" style="width: 0%;">
+                            <span class="progress-percent" id="xpPercent">0%</span>
+                        </div>
+                        <div class="xp-tooltip" id="xpTooltip">
+                            <span id="tooltipCurrentXP">0</span> / <span id="tooltipTotalXP">100</span> XP
+                        </div>
                     </div>
-                    <span id="xpProgressText">0% до следующего уровня</span>
+                    <span id="xpProgressText">До следующего уровня необходимо 100 XP</span>
                 </div>
                 <!-- Кнопка добавления -->
                 <button class="add-habit-btn" id="addHabitBtn">➕ Добавить привычку</button>
