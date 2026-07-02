@@ -374,15 +374,17 @@ async function toggleHabitHandler(habitId) {
             showNotification(`✅ Привычка выполнена! +${xpReward} XP, +${goldReward} 💵`, 'success');
             
             // ❌ НЕ ВЫЗЫВАЕМ updateQuestProgress, ПОКА НЕТ БЭКЕНДА
-            // await updateQuestProgress(habit.xp_reward, true);
-            // renderDailyQuests();
+            await updateQuestProgress(habit.xp_reward, true);
+            renderDailyQuests();
+            await loadDailyQuests();
         } else {
             animateCharacter('sad', 1500);
             showNotification('⏳ Привычка отменена', 'info');
             
             // ❌ НЕ ВЫЗЫВАЕМ updateQuestProgress, ПОКА НЕТ БЭКЕНДА
-            // await updateQuestProgress(habit.xp_reward, false);
-            // renderDailyQuests();
+            await updateQuestProgress(habit.xp_reward, false);
+            renderDailyQuests();
+            await loadDailyQuests();
         }
     } catch (error) {
         console.error('Ошибка отметки привычки:', error);

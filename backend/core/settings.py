@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'users',    # ← ДОЛЖНО БЫТЬ!
     'habits',
+    'daily_quests',
+    'shop',
 ]
 
 MIDDLEWARE = [

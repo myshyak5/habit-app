@@ -1,13 +1,14 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
-from rest_framework.authtoken.views import ObtainAuthToken
 from django.contrib.auth import authenticate
-from .serializers import RegisterSerializer, UserSerializer
+from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
+from .serializers import RegisterSerializer, UserSerializer
 
 User = get_user_model()
 
+# ✅ РЕГИСТРАЦИЯ
 class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = RegisterSerializer
@@ -26,7 +27,7 @@ class RegisterView(generics.CreateAPIView):
             'gold': user.gold,
         }, status=status.HTTP_201_CREATED)
 
-
+# ✅ ЛОГИН
 class LoginView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
 
@@ -48,23 +49,55 @@ class LoginView(generics.GenericAPIView):
             'gold': user.gold,
             'avatar_skin': user.avatar_skin,
         })
-        
+
+# ✅ ПРОФИЛЬ (GET)
 class UserProfileView(generics.RetrieveAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
 
     def get_object(self):
         return self.request.user
-    
-class UpdateAvatarView(generics.UpdateAPIView):
-    """Обновление аватара пользователя"""
-    permission_classes = [permissions.IsAuthenticated]
-    
+
+# ✅ ОБНОВЛЕНИЕ ПРОФИЛЯ (PUT/PATCH)
+class UserProfileUpdateView(generics.UpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
+
     def get_object(self):
         return self.request.user
+
+# ✅ УДАЛЕНИЕ АККАУНТА
+class DeleteUserView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        password = request.data.get('password')
+        
+        if not password:
+            return Response(
+                {'error': 'Введите пароль для подтверждения'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not user.check_password(password):
+            return Response(
+                {'error': 'Неверный пароль'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user.delete()
+        return Response(
+            {'status': 'success', 'message': 'Аккаунт удалён'},
+            status=status.HTTP_200_OK
+        )
+
+# ✅ ОБНОВЛЕНИЕ АВАТАРА
+class UpdateAvatarView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
     
-    def patch(self, request, *args, **kwargs):
-        user = self.get_object()
+    def post(self, request):
+        user = request.user
         avatar_skin = request.data.get('avatar_skin')
         
         if not avatar_skin:

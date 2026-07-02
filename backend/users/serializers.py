@@ -38,7 +38,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'username', 'email', 
             'experience', 'level', 'gold', 'health', 'avatar_skin', 'owned_skins',
-            'xp_for_next_level', 'xp_remaining', 'xp_progress'
+            'total_completed', 'xp_for_next_level', 'xp_remaining', 'xp_progress'
         )
         read_only_fields = (
             'id', 'experience', 'level', 'gold', 'health', 
