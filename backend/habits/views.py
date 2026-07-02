@@ -63,29 +63,41 @@ class HabitViewSet(viewsets.ModelViewSet):
         serializer.save()
 
     def destroy(self, request, *args, **kwargs):
-        """Удаление привычки (мягкое удаление) с откатом опыта и золота"""
+        """Удаление привычки (мягкое удаление) со списанием опыта ТОЛЬКО ЗА СЕГОДНЯ"""
         instance = self.get_object()
         user = request.user
-    
-        # Рассчитываем, сколько опыта и золота было получено за эту привычку
-        completed_count = len(instance.completed_dates or [])
-    
-        if completed_count > 0:
-            xp_per_completion = instance.xp_reward
-            gold_per_completion = xp_per_completion // 2
+        today = date.today().isoformat()
         
-            total_xp = completed_count * xp_per_completion
-            total_gold = completed_count * gold_per_completion
+        # Проверяем, выполнена ли привычка сегодня
+        completed_dates = instance.completed_dates or []
+        is_completed_today = today in completed_dates
         
-            # Сначала вычитаем золото
-            user.gold = max(0, user.gold - total_gold)
-            # Отнимаем опыт (внутри вызовется пересчет уровней и автоматический .save())
-            user.add_experience(-total_xp)
-    
-        # Мягкое удаление самой привычки
+        # Мягкое удаление привычки
         instance.is_active = False
         instance.save()
-    
+        
+        # Если привычка была выполнена сегодня — списываем опыт и золото за сегодня
+        if is_completed_today:
+            xp = instance.xp_reward
+            gold = xp // 2
+            
+            # Списываем золото за сегодня
+            user.gold = max(0, user.gold - gold)
+            # Списываем опыт за сегодня (пересчёт уровня внутри)
+            user.add_experience(-xp)
+            
+            return Response(
+                {
+                    'message': 'Привычка удалена, опыт за сегодня списан',
+                    'xp_removed': xp,
+                    'gold_removed': gold,
+                    'new_experience': user.experience,
+                    'new_gold': user.gold,
+                    'new_level': user.level
+                },
+                status=status.HTTP_204_NO_CONTENT
+            )
+        
         return Response(status=status.HTTP_204_NO_CONTENT)
     
     

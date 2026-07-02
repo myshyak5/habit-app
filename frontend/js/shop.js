@@ -1,30 +1,21 @@
 // frontend/js/shop.js
 
-// =============================================
-// 🛒 МАГАЗИН СКИНОВ
-// =============================================
-
 const SKINS = [
-    { id: 1, emoji: '🐹', name: 'Хомяк', price: 200 },
-    { id: 2, emoji: '🐼', name: 'Панда', price: 250 },
-    { id: 3, emoji: '💃', name: 'Танцор', price: 300 },
-    { id: 4, emoji: '🦖', name: 'Динозавр', price: 350 },
-    { id: 5, emoji: '🐙', name: 'Осьминог', price: 400 },
-    { id: 6, emoji: '🛡️', name: 'Рыцарь', price: 450 },
-    { id: 7, emoji: '🦜', name: 'Попугай', price: 500 },
-    { id: 8, emoji: '👽', name: 'Пришелец', price: 550 },
+    { id: 1, emoji: '🐹', name: 'Хомяк', price: 300 },
+    { id: 2, emoji: '🐼', name: 'Панда', price: 500 },
+    { id: 3, emoji: '💃', name: 'Танцор', price: 700 },
+    { id: 4, emoji: '🦖', name: 'Динозавр', price: 1000 },
+    { id: 5, emoji: '🐙', name: 'Осьминог', price: 1200 },
+    { id: 6, emoji: '🛡️', name: 'Рыцарь', price: 1300 },
+    { id: 7, emoji: '🦜', name: 'Попугай', price: 1400 },
+    { id: 8, emoji: '👽', name: 'Пришелец', price: 1500 },
 ];
 
 let selectedSkin = null;
 let userSkins = [];
 
-// =============================================
-// 🚀 ЗАГРУЗКА СТРАНИЦЫ
-// =============================================
-
 document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
-    
     const user = getUserData();
     updateGold(user.gold);
     loadUserSkins();
@@ -36,51 +27,26 @@ function updateGold(gold) {
     if (el) el.textContent = gold || 0;
 }
 
-function loadUserSkins() {
-    const saved = localStorage.getItem('userSkins');
-    if (saved) {
-        userSkins = JSON.parse(saved);
-    } else {
-        userSkins = [];
-        localStorage.setItem('userSkins', JSON.stringify(userSkins));
-    }
-    
-    const currentAvatar = localStorage.getItem('avatar');
-    if (currentAvatar) {
+async function loadUserSkins() {
+    try {
+        const user = await apiRequest('/user/', 'GET');
+        userSkins = user.owned_skins || [];
+        const currentAvatar = user.avatar_skin || '😊';
         const currentSkin = SKINS.find(s => s.emoji === currentAvatar);
         selectedSkin = currentSkin ? currentSkin.id : null;
-    } else {
+    } catch (error) {
+        console.warn('Не удалось загрузить скины с сервера:', error);
+        userSkins = [];
         selectedSkin = null;
     }
 }
 
-function saveUserSkins() {
-    localStorage.setItem('userSkins', JSON.stringify(userSkins));
-}
-
-// =============================================
-// 🎨 ОТРИСОВКА МАГАЗИНА
-// =============================================
-
 function renderShop() {
     const grid = document.getElementById('shopGrid');
-    if (!grid) {
-        console.warn('❌ shopGrid не найден');
-        return;
-    }
+    if (!grid) return;
 
     const user = getUserData();
     const gold = user.gold || 0;
-
-    if (SKINS.length === 0) {
-        grid.innerHTML = `
-            <div class="shop-empty">
-                <span class="emoji">🛒</span>
-                <p>Скины временно недоступны</p>
-            </div>
-        `;
-        return;
-    }
 
     grid.innerHTML = SKINS.map(skin => {
         const isOwned = userSkins.includes(skin.id);
@@ -113,25 +79,17 @@ function renderShop() {
         }
 
         return `
-            <div class="shop-item ${isOwned ? 'owned' : ''} ${isSelected ? 'selected' : ''}">
+            <div class="shop-item ${isOwned ? 'owned' : ''} ${isSelected ? 'selected' : ''}" data-id="${skin.id}">
                 <span class="shop-item-emoji">${skin.emoji}</span>
                 <div class="shop-item-name">${skin.name}</div>
                 ${hintText ? `<div class="shop-item-hint">${hintText}</div>` : '<div class="shop-item-hint"></div>'}
-                <button 
-                    class="${buttonClass}" 
-                    onclick="handleShopAction(${skin.id})"
-                    ${disabled ? 'disabled' : ''}
-                >
+                <button class="${buttonClass}" onclick="handleShopAction(${skin.id})" ${disabled ? 'disabled' : ''}>
                     ${buttonText}
                 </button>
             </div>
         `;
     }).join('');
 }
-
-// =============================================
-// 🎯 ДЕЙСТВИЯ В МАГАЗИНЕ
-// =============================================
 
 async function handleShopAction(skinId) {
     const skin = SKINS.find(s => s.id === skinId);
@@ -147,40 +105,22 @@ async function handleShopAction(skinId) {
     }
 
     if (gold < skin.price) {
-        showMessage('❌ Недостаточно золота! Заработайте его, выполняя привычки.', 'error');
+        showMessage('❌ Недостаточно золота!', 'error');
         return;
     }
 
-    const confirmBuy = confirm(
-        `🛒 Купить скин "${skin.name}" ${skin.emoji}?\n\n` +
-        `Цена: 💵 ${skin.price}\n` +
-        `Ваш баланс: 💵 ${gold}\n\n` +
-        `После покупки у вас останется: 💵 ${gold - skin.price}`
-    );
-
-    if (!confirmBuy) return;
+    if (!confirm(`🛒 Купить скин "${skin.name}" ${skin.emoji}?\nЦена: 💵 ${skin.price}\nВаш баланс: 💵 ${gold}`)) return;
 
     try {
         userSkins.push(skinId);
-        saveUserSkins();
-        
-        const newGold = gold - skin.price;
-        localStorage.setItem('gold', newGold);
-        
-        updateGold(newGold);
-        renderShop();
-        
-        showMessage(`✅ Скин "${skin.name}" успешно куплен!`, 'success');
+        localStorage.setItem('gold', gold - skin.price);
+        updateGold(gold - skin.price);
+        showMessage(`✅ Скин "${skin.name}" куплен!`, 'success');
         selectSkin(skinId);
-        
     } catch (error) {
-        showMessage('❌ Ошибка покупки: ' + error.message, 'error');
+        showMessage('❌ Ошибка покупки', 'error');
     }
 }
-
-// =============================================
-// 🎨 ВЫБОР СКИНА (С СОХРАНЕНИЕМ В БД)
-// =============================================
 
 async function selectSkin(skinId) {
     const skin = SKINS.find(s => s.id === skinId);
@@ -190,48 +130,75 @@ async function selectSkin(skinId) {
     localStorage.setItem('avatar', skin.emoji);
     
     try {
-        await apiRequest('/user/update_avatar/', 'PATCH', {
-            avatar_skin: skin.emoji
-        });
-        console.log('✅ Аватар сохранён на сервере:', skin.emoji);
+        await apiRequest('/user/update_avatar/', 'PATCH', { avatar_skin: skin.emoji });
     } catch (error) {
         console.warn('⚠️ Не удалось сохранить аватар на сервере:', error);
     }
     
-    renderShop();
+    updateShopSelection(skinId);
     updateAvatarOnDashboard(skin.emoji);
     showMessage(`✅ Скин "${skin.name}" выбран!`, 'success');
 }
 
-function updateAvatarOnDashboard(emoji) {
-    const avatarElement = document.getElementById('characterAvatar');
-    if (avatarElement) {
-        avatarElement.textContent = emoji;
+// =============================================
+// 🔄 ОБНОВЛЕНИЕ ТОЛЬКО ВЫБРАННОГО СКИНА
+// =============================================
+
+function updateShopSelection(skinId) {
+    // 1. Снимаем выделение со ВСЕХ карточек
+    document.querySelectorAll('.shop-item').forEach(item => {
+        const itemId = parseInt(item.dataset.id);
+        const isOwned = userSkins.includes(itemId);
+        const btn = item.querySelector('.btn-buy');
+        
+        item.classList.remove('selected');
+        
+        if (btn) {
+            btn.classList.remove('selected');
+            
+            if (isOwned && itemId !== skinId) {
+                btn.textContent = '📤 Выбрать';
+                btn.className = 'btn-buy owned';
+                btn.disabled = false;
+            } else if (!isOwned && itemId !== skinId) {
+                const skin = SKINS.find(s => s.id === itemId);
+                if (skin) {
+                    const gold = getUserData().gold || 0;
+                    const canBuy = gold >= skin.price;
+                    btn.textContent = `💵 ${skin.price}`;
+                    btn.className = canBuy ? 'btn-buy' : 'btn-buy disabled';
+                    btn.disabled = !canBuy;
+                }
+            }
+        }
+    });
+    
+    // 2. Подсвечиваем ВЫБРАННУЮ карточку
+    const selectedItem = document.querySelector(`.shop-item[data-id="${skinId}"]`);
+    if (selectedItem) {
+        selectedItem.classList.add('selected');
+        const btn = selectedItem.querySelector('.btn-buy');
+        if (btn) {
+            btn.classList.add('selected');
+            btn.textContent = '✅ Выбран';
+            btn.disabled = true;
+        }
     }
 }
 
-// =============================================
-// 💬 ПЛАВАЮЩИЕ УВЕДОМЛЕНИЯ (РАБОЧАЯ ВЕРСИЯ)
-// =============================================
+function updateAvatarOnDashboard(emoji) {
+    const avatarElement = document.getElementById('characterAvatar');
+    if (avatarElement) avatarElement.textContent = emoji;
+}
 
+// ===== УВЕДОМЛЕНИЯ =====
 let messageTimeout = null;
 
 function showMessage(text, type = 'info') {
-    // Удаляем старые уведомления
     document.querySelectorAll('.shop-notification').forEach(el => el.remove());
-    
-    if (messageTimeout) {
-        clearTimeout(messageTimeout);
-        messageTimeout = null;
-    }
+    if (messageTimeout) clearTimeout(messageTimeout);
 
-    const colors = {
-        success: '#2ecc71',
-        error: '#e74c3c',
-        info: '#3498db',
-        warning: '#f39c12'
-    };
-
+    const colors = { success: '#2ecc71', error: '#e74c3c', info: '#3498db', warning: '#f39c12' };
     const notification = document.createElement('div');
     notification.className = 'shop-notification';
     notification.style.cssText = `
@@ -253,11 +220,7 @@ function showMessage(text, type = 'info') {
     `;
     notification.textContent = text;
     document.body.appendChild(notification);
-    
-    // Принудительный рефлоу
     void notification.offsetHeight;
-    
-    // Появление
     notification.style.transform = 'translateX(0)';
     notification.style.opacity = '1';
 
@@ -269,14 +232,9 @@ function showMessage(text, type = 'info') {
     }, 2500);
 }
 
-// =============================================
-// 🔄 ОБНОВЛЕНИЕ ЗОЛОТА (из другой вкладки)
-// =============================================
-
 window.addEventListener('storage', function(e) {
     if (e.key === 'gold') {
-        const newGold = parseInt(e.newValue) || 0;
-        updateGold(newGold);
+        updateGold(parseInt(e.newValue) || 0);
         renderShop();
     }
 });

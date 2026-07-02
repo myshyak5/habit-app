@@ -8,7 +8,7 @@ async function registerUser(username, password, password2, email = '') {
         password2: password2,
         email: email,
     });
-
+    localStorage.clear();
     // Сохраняем данные в localStorage
     localStorage.setItem('token', data.token);
     localStorage.setItem('username', data.username);
