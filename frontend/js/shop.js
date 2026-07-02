@@ -112,18 +112,25 @@ async function handleShopAction(skinId) {
     if (!confirm(`🛒 Купить скин "${skin.name}" ${skin.emoji}?\nЦена: 💵 ${skin.price}\nВаш баланс: 💵 ${gold}`)) return;
 
     try {
+        // 1. Покупаем на сервере
         const response = await apiRequest(`/skins/${skinId}/buy/`, 'POST');
+        
+        // 2. Обновляем данные с сервера
         await refreshUserData();
         await loadUserSkins();
         
-        updateGold(response.gold_left);
-        updateShopSelection(skinId);
-        updateAvatarOnDashboard(skin.emoji);
+        // 3. Обновляем интерфейс
+        updateGold(response.gold_left || 0);
+        renderShop();
         
+        // 4. Показываем уведомление
         showMessage(`✅ Скин "${skin.name}" куплен!`, 'success');
-        selectSkin(skinId);
+        
+        // 5. ✅ АВТОМАТИЧЕСКИ ВЫБИРАЕМ СКИН
+        // selectSkin(skinId);  // ← РАСКОММЕНТИРОВАТЬ, ЕСЛИ НУЖНО АВТО-ВЫБОР
         
     } catch (error) {
+        console.error('Ошибка покупки:', error);
         showMessage('❌ Ошибка покупки: ' + error.message, 'error');
     }
 }
