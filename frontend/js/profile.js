@@ -12,18 +12,19 @@ let selectedAvatar = '😊';
 
 document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
-    
+    const avatar = localStorage.getItem('avatar') || '😊';
+    const username = localStorage.getItem('username') || 'Пользователь';
+    document.getElementById('profileAvatar').textContent = avatar;
+    document.getElementById('profileUsername').textContent = username;
+    await refreshUserData();
     const user = getUserData();
     selectedAvatar = user.avatar || '😊';
-    
     updateProfile(user);
     highlightSelectedAvatar(selectedAvatar);
     await loadOwnedSkinsIntoSelector();
-    
     await loadProfileStats();
-    await loadChartData();  // ← ДОЛЖНО БЫТЬ
+    await loadChartData();
 });
-
 // =============================================
 // 👤 ОБНОВЛЕНИЕ ПРОФИЛЯ
 // =============================================
@@ -69,19 +70,14 @@ document.querySelectorAll('.avatar-option:not(.owned-skin)').forEach(option => {
 // =============================================
 
 async function loadOwnedSkinsIntoSelector() {
-    const container = document.getElementById('avatarSelector');
+    const container = document.getElementById('avatarSelector');  // ← НУЖНО ОБЪЯВИТЬ!
     if (!container) return;
-
-    // Удаляем старые купленные скины
     container.querySelectorAll('.owned-skin').forEach(el => el.remove());
-
     try {
-        // 🔥 ЗАГРУЖАЕМ СКИНЫ С СЕРВЕРА
         const user = await apiRequest('/user/', 'GET');
         const ownedSkinIds = user.owned_skins || [];
-        const currentAvatar = user.avatar_skin || '😊';
+        const currentAvatar = user.avatar_skin || '😊';  // ← НУЖНО ОБЪЯВИТЬ!
 
-        // Используем SKINS из глобальной области (из shop.js)
         const skins = window.SKINS || [];
         const ownedSkins = skins.filter(skin => ownedSkinIds.includes(skin.id));
 
@@ -101,7 +97,7 @@ async function loadOwnedSkinsIntoSelector() {
             container.appendChild(option);
         });
     } catch (error) {
-        console.warn('⚠️ Не удалось загрузить скины с сервера:', error);
+        console.warn('Не удалось загрузить скины с сервера:', error);
     }
 }
 
@@ -114,49 +110,78 @@ document.getElementById('saveAvatarBtn')?.addEventListener('click', async functi
         await apiRequest('/user/update_avatar/', 'PATCH', {
             avatar_skin: selectedAvatar
         });
-        
-        localStorage.setItem('avatar', selectedAvatar);
+        await refreshUserData();
         const user = getUserData();
-        user.avatar = selectedAvatar;
         updateProfile(user);
         highlightSelectedAvatar(selectedAvatar);
-        loadOwnedSkinsIntoSelector();
-        
-        showNotification('✅ Аватар сохранён на сервере!', 'success');
+        await loadOwnedSkinsIntoSelector();
+        showNotification('✅ Аватар сохранён!', 'success');
     } catch (error) {
-        localStorage.setItem('avatar', selectedAvatar);
-        const user = getUserData();
-        user.avatar = selectedAvatar;
-        updateProfile(user);
-        highlightSelectedAvatar(selectedAvatar);
-        loadOwnedSkinsIntoSelector();
-        showNotification('✅ Аватар сохранён локально!', 'success');
-        console.warn('Серверный API для смены аватара не найден, сохранено в localStorage');
+        showNotification('❌ Ошибка сохранения аватара', 'error');
     }
 });
-
+document.getElementById('deleteAccountBtn')?.addEventListener('click', async function() {
+    // Первое подтверждение
+    const confirmDelete = confirm(
+        '⚠️ ВНИМАНИЕ! Вы собираетесь удалить свой аккаунт.\n\n' +
+        'Это действие НЕОБРАТИМО.\n' +
+        'Будут удалены:\n' +
+        '• Все ваши привычки\n' +
+        '• Вся статистика и опыт\n' +
+        '• Все купленные скины\n' +
+        '• Ваш профиль\n\n' +
+        'Вы уверены, что хотите продолжить?'
+    );
+    
+    if (!confirmDelete) return;
+    
+    // Второе подтверждение (ввод пароля)
+    const password = prompt(
+        '🔐 Введите ваш пароль для подтверждения удаления аккаунта:'
+    );
+    
+    if (password === null) return;  // Нажал "Отмена"
+    
+    if (!password || password.trim() === '') {
+        showNotification('❌ Пароль не может быть пустым', 'error');
+        return;
+    }
+    try {
+        // Отправляем запрос на удаление
+        const response = await apiRequest('/user/delete/', 'POST', {
+            password: password
+        });
+        
+        if (response.status === 'success') {
+            showNotification('✅ Аккаунт успешно удалён', 'success');
+            
+            // Очищаем localStorage
+            localStorage.clear();
+            
+            // Перенаправляем на главную
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1500);
+        }
+    } catch (error) {
+        console.error('Ошибка удаления аккаунта:', error);
+        
+        if (error.message.includes('пароль') || error.message.includes('password')) {
+            showNotification('❌ Неверный пароль. Попробуйте снова.', 'error');
+        } else {
+            showNotification('❌ Ошибка удаления аккаунта: ' + error.message, 'error');
+        }
+    }
+});
 // =============================================
 // 📊 СТАТИСТИКА
 // =============================================
-
 async function loadProfileStats() {
     try {
-        // 🔥 Получаем данные пользователя С СЕРВЕРА (где хранится total_completed)
-        // (предполагается, что getUserData() обновится после refreshUserData)
-        const user = getUserData(); 
-        
-        // Берем готовое число из данных пользователя
-        const totalCompleted = user.total_completed || 0;
-        
-        // Вставляем в верстку
-        document.getElementById('profileCompleted').textContent = totalCompleted;
-        
-        return [];
+        const user = getUserData();
+        document.getElementById('profileCompleted').textContent = user.total_completed || 0;
     } catch (error) {
-        console.error('Ошибка загрузки статистики:', error);
         document.getElementById('profileCompleted').textContent = '0';
-        document.getElementById('profileCompleted').style.color = '#999';
-        return [];
     }
 }
 

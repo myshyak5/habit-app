@@ -3,13 +3,13 @@
 // Загрузка дашборда
 document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
-    
+    const avatar = localStorage.getItem('avatar') || '😊';
+    const username = localStorage.getItem('username') || 'Пользователь';
+    document.getElementById('characterAvatar').textContent = avatar;
+    document.getElementById('usernameDisplay').textContent = username;
     await refreshUserData();
     updateUserInfo();
-    
-    // 🔥 ЗАГРУЖАЕМ ЕЖЕДНЕВНЫЕ ЗАДАНИЯ С БЭКЕНДА
     await loadDailyQuests();
-    
     await loadHabits();
 });
 
@@ -35,21 +35,15 @@ let dailyQuestsCompleted = false;
 async function loadDailyQuests() {
     try {
         const response = await apiRequest('/daily-quests/', 'GET');
-        
         dailyQuestsProgress = {
             [DAILY_QUESTS[0].id]: response.quest_1_progress || 0,
             [DAILY_QUESTS[1].id]: response.quest_2_progress || 0,
             [DAILY_QUESTS[2].id]: response.quest_3_progress || 0,
         };
         dailyQuestsCompleted = response.all_completed || false;
-        
         renderDailyQuests();
     } catch (error) {
-        // ❌ НЕ СОЗДАЁМ ЛОКАЛЬНЫЕ ЗАДАНИЯ
-        console.warn('⚠️ Ежедневные задания недоступны (бэкенд не готов):', error);
-        dailyQuestsProgress = {};
-        dailyQuestsCompleted = false;
-        // Показываем пустой блок
+        console.warn('Ежедневные задания недоступны:', error);
         renderDailyQuestsEmpty();
     }
 }
@@ -83,7 +77,7 @@ async function updateQuestProgress(habitXp, isCompleted = true) {
         return response;
     } catch (error) {
         // ❌ НЕ СОЗДАЁМ ЛОКАЛЬНЫЕ ЗАДАНИЯ
-        console.warn('⚠️ Не удалось обновить прогресс заданий:', error);
+        console.warn('Ошибка обновления прогресса:', error);
         // Просто игнорируем — задания не появятся локально
     }
 }
@@ -200,7 +194,6 @@ async function loadHabits() {
             `;
             return;
         }
-
         habitsList.innerHTML = habits.map(habit => {
             const completed = isCompletedToday(habit.completed_dates);
             const xpReward = habit.xp_reward || 10;
@@ -245,19 +238,17 @@ function updateUserInfo() {
     const user = getUserData();
     const oldLevel = parseInt(localStorage.getItem('oldLevel')) || user.level;
     
-    // ---- 1. БАЗОВЫЕ ДАННЫЕ ----
     document.getElementById('usernameDisplay').textContent = user.username;
     document.getElementById('levelDisplay').textContent = user.level;
     document.getElementById('xpDisplay').textContent = user.experience;
     document.getElementById('goldDisplay').textContent = user.gold;
     
-    // ---- 2. ПРОГРЕСС-БАР (БЕРЁМ ГОТОВЫЕ ДАННЫЕ С СЕРВЕРА) ----
+    // Прогресс-бар
     const progressPercent = user.xp_progress || 0;
     const xpForNextLevel = user.xp_for_next_level || 100;
     const xpRemaining = user.xp_remaining || 0;
     const xpOnLevel = user.experience - (xpForNextLevel - xpRemaining);
     
-    // ---- 3. ОБНОВЛЯЕМ ПРОГРЕСС-БАР ----
     const progressFill = document.getElementById('xpProgress');
     const percentSpan = document.querySelector('.progress-percent');
     if (progressFill) {
@@ -267,7 +258,6 @@ function updateUserInfo() {
         }
     }
     
-    // ---- 4. ОБНОВЛЯЕМ ПОДСКАЗКУ ----
     const tooltipCurrent = document.getElementById('tooltipCurrentXP');
     const tooltipTotal = document.getElementById('tooltipTotalXP');
     if (tooltipCurrent) {
@@ -277,47 +267,16 @@ function updateUserInfo() {
         tooltipTotal.textContent = xpForNextLevel;
     }
     
-    // ---- 5. ОБНОВЛЯЕМ ТЕКСТ ----
     const progressText = document.getElementById('xpProgressText');
     if (progressText) {
         progressText.textContent = `До уровня ${user.level + 1} осталось ${Math.round(xpRemaining)} XP`;
     }
     
-    // ---- 6. АВАТАРКА ----
-    const avatarElement = document.getElementById('characterAvatar');
-    if (avatarElement) {
-        avatarElement.textContent = user.avatar || '😊';
-    }
+    // ===== АВАТАРКА (ПРОСТО ИЗ КЕША) =====
+    document.getElementById('characterAvatar').textContent = user.avatar || '😊';
     
-    // ---- 7. ПРОВЕРКА УРОВНЯ ----
     checkLevelUp(oldLevel, user.level);
     localStorage.setItem('oldLevel', user.level);
-}
-
-// =============================================
-// 🔄 ОБНОВЛЕНИЕ ДАННЫХ С СЕРВЕРА
-// =============================================
-
-async function refreshUserData() {
-    try {
-        const userData = await apiRequest('/user/', 'GET');
-        
-        // 🔥 СОХРАНЯЕМ ВСЕ ДАННЫЕ С СЕРВЕРА
-        localStorage.setItem('level', userData.level);
-        localStorage.setItem('experience', userData.experience);
-        localStorage.setItem('gold', userData.gold);
-        localStorage.setItem('avatar', userData.avatar_skin || '😊');
-        
-        // 🔥 СОХРАНЯЕМ ДАННЫЕ ДЛЯ ПРОГРЕСС-БАРА
-        localStorage.setItem('xp_progress', userData.xp_progress);
-        localStorage.setItem('xp_for_next_level', userData.xp_for_next_level);
-        localStorage.setItem('xp_remaining', userData.xp_remaining);
-        
-        return userData;
-    } catch (error) {
-        console.warn('Не удалось обновить данные с сервера, используем локальные');
-        return getUserData();
-    }
 }
 
 // =============================================

@@ -197,6 +197,7 @@ body.auth-page {
 }
 
 .progress-fill {
+    width: 0%;
     height: 100%;
     background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
     border-radius: 12px;
@@ -205,7 +206,7 @@ body.auth-page {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding-right: 10px;
+    padding-right: 6px;
     min-width: 30px;
 }
 
