@@ -1,13 +1,13 @@
 // frontend/js/shop.js
 
 const SKINS = [
-    { id: 1, emoji: '🐹', name: 'Хомяк', price: 300 },
-    { id: 2, emoji: '🐼', name: 'Панда', price: 500 },
-    { id: 3, emoji: '💃', name: 'Танцор', price: 700 },
-    { id: 4, emoji: '🦖', name: 'Динозавр', price: 1000 },
-    { id: 5, emoji: '🐙', name: 'Осьминог', price: 1200 },
-    { id: 6, emoji: '🛡️', name: 'Рыцарь', price: 1300 },
-    { id: 7, emoji: '🦜', name: 'Попугай', price: 1400 },
+    { id: 1, emoji: '🐹', name: 'Хомяк', price: 200 },
+    { id: 2, emoji: '🐼', name: 'Панда', price: 400 },
+    { id: 3, emoji: '💃', name: 'Танцор', price: 600 },
+    { id: 4, emoji: '🦖', name: 'Динозавр', price: 800 },
+    { id: 5, emoji: '🐙', name: 'Осьминог', price: 1000 },
+    { id: 6, emoji: '🛡️', name: 'Рыцарь', price: 1200 },
+    { id: 7, emoji: '🦜', name: 'Попугай', price: 1300 },
     { id: 8, emoji: '👽', name: 'Пришелец', price: 1500 },
 ];
 
@@ -112,16 +112,21 @@ async function handleShopAction(skinId) {
     if (!confirm(`🛒 Купить скин "${skin.name}" ${skin.emoji}?\nЦена: 💵 ${skin.price}\nВаш баланс: 💵 ${gold}`)) return;
 
     try {
-        userSkins.push(skinId);
-        localStorage.setItem('gold', gold - skin.price);
-        updateGold(gold - skin.price);
+        const response = await apiRequest(`/skins/${skinId}/buy/`, 'POST');
+        await refreshUserData();
+        await loadUserSkins();
+        
+        updateGold(response.gold_left);
+        updateShopSelection(skinId);
+        updateAvatarOnDashboard(skin.emoji);
+        
         showMessage(`✅ Скин "${skin.name}" куплен!`, 'success');
         selectSkin(skinId);
+        
     } catch (error) {
-        showMessage('❌ Ошибка покупки', 'error');
+        showMessage('❌ Ошибка покупки: ' + error.message, 'error');
     }
 }
-
 async function selectSkin(skinId) {
     const skin = SKINS.find(s => s.id === skinId);
     if (!skin) return;
