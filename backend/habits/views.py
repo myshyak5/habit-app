@@ -12,7 +12,7 @@ class HabitViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'put', 'patch', 'delete']
 
     def get_queryset(self):
-        return Habit.objects.filter(user=self.request.user, is_active=True)
+        return Habit.objects.filter(user=self.request.user, is_active=True).order_by('-created_at')
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

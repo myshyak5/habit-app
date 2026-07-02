@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Профиль - Habit RPG</title>
     <link rel="stylesheet" href="css/style.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -98,16 +98,23 @@
             font-size: 24px;
         }
 
-        /* Прогресс-бар в профиле */
-        .profile-progress {
-            margin: 20px 0;
+        .chart-container {
+            margin: 25px 0;
         }
 
-        .profile-progress .progress-bar {
-            height: 20px;
+        .chart-container h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
         }
 
-        /* Смена аватара */
+        .chart-container canvas {
+            max-width: 100%;
+            max-height: 250px;
+        }
+
         .avatar-selector {
             display: flex;
             gap: 15px;
@@ -141,57 +148,101 @@
             box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
         }
 
+        /* ===== РАЗДЕЛИТЕЛЬ ===== */
+        hr {
+            margin: 25px 0;
+            border: none;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        /* ===== КНОПКИ ===== */
         .profile-actions {
             display: flex;
-            gap: 15px;
-            margin-top: 20px;
+            gap: 12px;
+            margin-top: 25px;
             flex-wrap: wrap;
         }
-        .chart-container {
-            margin: 25px 0;
-        }
 
-        .chart-container h3 {
-            font-size: 18px;
+        .btn-profile {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
             font-weight: 600;
-            color: #333;
-            margin-bottom: 15px;
+            font-size: 15px;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            display: inline-block;
+            white-space: nowrap;
         }
 
-        .chart-container canvas {
-            max-width: 100%;
-            max-height: 250px;
+        .btn-profile:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-profile:active {
+            transform: translateY(0px);
+            box-shadow: none;
         }
 
         .btn-back {
             background: #f0f0f0;
             color: #333;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            text-decoration: none;
-            transition: background 0.2s;
         }
 
         .btn-back:hover {
             background: #e0e0e0;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
         }
 
         .btn-save {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: transform 0.2s;
         }
 
         .btn-save:hover {
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* ===== ОПАСНАЯ ЗОНА ===== */
+        .danger-zone {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .danger-zone p {
+            font-size: 12px;
+            color: #999;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .btn-danger {
+            width: 100%;
+            padding: 12px 20px;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.25s ease;
+        }
+
+        .btn-danger:hover {
+            background: #ff6b81;
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4);
+        }
+
+        .btn-danger:active {
+            transform: translateY(0px);
         }
 
         @media (max-width: 600px) {
@@ -204,6 +255,12 @@
             }
             .avatar-selector {
                 justify-content: center;
+            }
+            .profile-actions {
+                flex-direction: column;
+            }
+            .btn-profile {
+                min-width: 100%;
             }
         }
     </style>
@@ -220,6 +277,7 @@
             <button onclick="logoutUser()" class="btn-logout">Выйти</button>
         </div>
     </header>
+
     <div class="profile-container">
         <div class="profile-box">
             <!-- Шапка профиля -->
@@ -249,15 +307,18 @@
                     <div class="stat-label">Выполнено привычек</div>
                 </div>
             </div>
-            <div class="chart-container" style="margin: 25px 0;">
-                <h3 style="margin-bottom:15px; text-align:center; color:#333;">📈 Активность за неделю</h3>
+
+            <!-- График активности -->
+            <div class="chart-container">
+                <h3>📈 Активность за неделю</h3>
                 <div style="background:#f8f9fa; border-radius:12px; padding:20px;">
-                    <canvas id="activityChart" style="max-height:250px;"></canvas>
+                    <canvas id="activityChart"></canvas>
                 </div>
             </div>
+
             <!-- Смена аватара -->
-            <hr style="margin:20px 0;border:none;border-top:2px solid #f0f0f0;" />
-            <h3 style="margin-bottom:10px;">🎨 Выберите аватар</h3>
+            <hr />
+            <h3 style="margin-bottom:15px;">🎨 Выберите аватар</h3>
             <div class="avatar-selector" id="avatarSelector">
                 <div class="avatar-option" data-avatar="😊">😊</div>
                 <div class="avatar-option" data-avatar="🧙‍♂️">🧙‍♂️</div>
@@ -268,8 +329,14 @@
 
             <!-- Кнопки -->
             <div class="profile-actions">
-                <a href="dashboard.html" class="btn-back">← Назад к привычкам</a>
-                <button class="btn-save" id="saveAvatarBtn">💾 Сохранить аватар</button>
+                <a href="dashboard.html" class="btn-profile btn-back">← Назад к привычкам</a>
+                <button class="btn-profile btn-save" id="saveAvatarBtn">💾 Сохранить аватар</button>
+            </div>
+
+            <!-- Опасная зона -->
+            <div class="danger-zone">
+                <button class="btn-danger" id="deleteAccountBtn">🗑️ Удалить аккаунт</button>
+                <p>⚠️ Это действие необратимо. Все данные будут удалены.</p>
             </div>
         </div>
     </div>
@@ -277,7 +344,7 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/utils.js"></script>
-    <script src="js/habits.js"></script> 
+    <script src="js/habits.js"></script>
     <script src="js/profile.js"></script>
 </body>
 </html>

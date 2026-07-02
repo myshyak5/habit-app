@@ -9,15 +9,13 @@ async function registerUser(username, password, password2, email = '') {
         email: email,
     });
     localStorage.clear();
-    // Сохраняем данные в localStorage
+
     localStorage.setItem('token', data.token);
     localStorage.setItem('username', data.username);
     localStorage.setItem('user_id', data.user_id);
-    if (data.level) localStorage.setItem('level', data.level);
-    if (data.experience) localStorage.setItem('experience', data.experience);
-    if (data.gold) localStorage.setItem('gold', data.gold);
-    
-    // 🔥 ДОБАВЛЯЕМ СОХРАНЕНИЕ АВАТАРА
+    localStorage.setItem('level', data.level || 1);
+    localStorage.setItem('experience', data.experience || 0);
+    localStorage.setItem('gold', data.gold || 0);
     localStorage.setItem('avatar', data.avatar_skin || '😊');
 
     return data;
@@ -36,8 +34,6 @@ async function loginUser(username, password) {
     localStorage.setItem('level', data.level || 1);
     localStorage.setItem('experience', data.experience || 0);
     localStorage.setItem('gold', data.gold || 0);
-    
-    // 🔥 ДОБАВЛЯЕМ СОХРАНЕНИЕ АВАТАРА
     localStorage.setItem('avatar', data.avatar_skin || '😊');
 
     return data;
@@ -65,7 +61,6 @@ function checkAuth() {
     return true;
 }
 
-// Получить данные пользователя из localStorage
 function getUserData() {
     return {
         username: localStorage.getItem('username') || 'Пользователь',
@@ -74,5 +69,26 @@ function getUserData() {
         gold: parseInt(localStorage.getItem('gold')) || 0,
         avatar: localStorage.getItem('avatar') || '😊',
         userId: parseInt(localStorage.getItem('user_id')) || null,
+        total_completed: parseInt(localStorage.getItem('total_completed')) || 0,
+        xp_progress: parseFloat(localStorage.getItem('xp_progress')) || 0,
+        xp_for_next_level: parseInt(localStorage.getItem('xp_for_next_level')) || 100,
+        xp_remaining: parseInt(localStorage.getItem('xp_remaining')) || 0,
     };
+}
+async function refreshUserData() {
+    try {
+        const userData = await apiRequest('/user/', 'GET');
+        localStorage.setItem('avatar', userData.avatar_skin || '😊');
+        localStorage.setItem('level', userData.level);
+        localStorage.setItem('experience', userData.experience);
+        localStorage.setItem('gold', userData.gold);
+        localStorage.setItem('total_completed', userData.total_completed || 0);
+        localStorage.setItem('xp_progress', userData.xp_progress);
+        localStorage.setItem('xp_for_next_level', userData.xp_for_next_level);
+        localStorage.setItem('xp_remaining', userData.xp_remaining);
+        return userData;
+    } catch (error) {
+        console.warn('Не удалось обновить данные с сервера:', error);
+        return getUserData();
+    }
 }
