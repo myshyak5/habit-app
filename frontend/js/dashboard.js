@@ -1,22 +1,20 @@
 // frontend/js/dashboard.js
 
-// Загрузка дашборда
+// =============================================
+// 🚀 ЗАГРУЗКА ДАШБОРДА
+// =============================================
+
 document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
-    const avatar = localStorage.getItem('avatar') || '😊';
-    const username = localStorage.getItem('username') || 'Пользователь';
-    document.getElementById('characterAvatar').textContent = avatar;
-    document.getElementById('usernameDisplay').textContent = username;
+    
     await refreshUserData();
     updateUserInfo();
     await loadDailyQuests();
     await loadHabits();
 });
 
-// frontend/js/dashboard.js
-
 // =============================================
-// 📋 ЕЖЕДНЕВНЫЕ ЗАДАНИЯ (ТОЛЬКО БЭКЕНД)
+// 📋 ЕЖЕДНЕВНЫЕ ЗАДАНИЯ
 // =============================================
 
 const DAILY_QUESTS = [
@@ -68,17 +66,15 @@ async function updateQuestProgress(habitXp, isCompleted = true) {
         
         renderDailyQuests();
         
-        if (response.rewarded && response.all_completed) {
-            showNotification('🎉 Все ежедневные задания выполнены!', 'success');
-            await refreshUserData();
-            updateUserInfo();
-        }
+        // if (response.rewarded && response.all_completed) {
+        //     showNotification('🎉 Все ежедневные задания выполнены!', 'success');
+        //     await refreshUserData();
+        //     updateUserInfo();
+        // }
         
         return response;
     } catch (error) {
-        // ❌ НЕ СОЗДАЁМ ЛОКАЛЬНЫЕ ЗАДАНИЯ
         console.warn('Ошибка обновления прогресса:', error);
-        // Просто игнорируем — задания не появятся локально
     }
 }
 
@@ -90,7 +86,6 @@ function renderDailyQuests() {
     const container = document.getElementById('dailyQuestsList');
     if (!container) return;
 
-    // Если нет данных — показываем пустой блок
     if (Object.keys(dailyQuestsProgress).length === 0) {
         renderDailyQuestsEmpty();
         return;
@@ -128,20 +123,16 @@ function renderDailyQuests() {
         `;
     }).join('');
 
-    if (allCompleted) {
-        const totalGold = DAILY_QUESTS.reduce((sum, q) => sum + q.rewardGold, 0);
-        const totalXp = DAILY_QUESTS.reduce((sum, q) => sum + q.rewardXp, 0);
-        container.innerHTML += `
-            <div style="text-align:center;padding:12px;background:#d4edda;border-radius:10px;margin-top:10px;color:#155724;font-weight:600;font-size:13px;">
-                🎉 Все выполнено! +${totalGold} 💵 +${totalXp} XP
-            </div>
-        `;
-    }
+    // if (allCompleted) {
+    //     const totalGold = DAILY_QUESTS.reduce((sum, q) => sum + q.rewardGold, 0);
+    //     const totalXp = DAILY_QUESTS.reduce((sum, q) => sum + q.rewardXp, 0);
+    //     container.innerHTML += `
+    //         <div style="text-align:center;padding:12px;background:#d4edda;border-radius:10px;margin-top:10px;color:#155724;font-weight:600;font-size:13px;">
+    //             🎉 Все выполнено! +${totalGold} 💵 +${totalXp} XP
+    //         </div>
+    //     `;
+    // }
 }
-
-// =============================================
-// 🎨 ПУСТОЙ БЛОК (КОГДА БЭКЕНД НЕ ДОСТУПЕН)
-// =============================================
 
 function renderDailyQuestsEmpty() {
     const container = document.getElementById('dailyQuestsList');
@@ -194,6 +185,7 @@ async function loadHabits() {
             `;
             return;
         }
+
         habitsList.innerHTML = habits.map(habit => {
             const completed = isCompletedToday(habit.completed_dates);
             const xpReward = habit.xp_reward || 10;
@@ -243,11 +235,10 @@ function updateUserInfo() {
     document.getElementById('xpDisplay').textContent = user.experience;
     document.getElementById('goldDisplay').textContent = user.gold;
     
-    // Прогресс-бар
     const progressPercent = user.xp_progress || 0;
     const xpForNextLevel = user.xp_for_next_level || 100;
     const xpRemaining = user.xp_remaining || 0;
-    const xpOnLevel = user.experience - (xpForNextLevel - xpRemaining);
+    const xpOnLevel = xpForNextLevel - xpRemaining;
     
     const progressFill = document.getElementById('xpProgress');
     const percentSpan = document.querySelector('.progress-percent');
@@ -272,7 +263,6 @@ function updateUserInfo() {
         progressText.textContent = `До уровня ${user.level + 1} осталось ${Math.round(xpRemaining)} XP`;
     }
     
-    // ===== АВАТАРКА (ПРОСТО ИЗ КЕША) =====
     document.getElementById('characterAvatar').textContent = user.avatar || '😊';
     
     checkLevelUp(oldLevel, user.level);
@@ -302,6 +292,7 @@ function getUserData() {
 // =============================================
 
 async function toggleHabitHandler(habitId) {
+    console.log('🔄 toggleHabitHandler ВЫЗВАН!', new Date().getTime());
     try {
         const habits = await getHabits();
         const habit = habits.find(h => h.id === habitId);
@@ -332,18 +323,14 @@ async function toggleHabitHandler(habitId) {
             const goldReward = Math.floor(xpReward / 2);
             showNotification(`✅ Привычка выполнена! +${xpReward} XP, +${goldReward} 💵`, 'success');
             
-            // ❌ НЕ ВЫЗЫВАЕМ updateQuestProgress, ПОКА НЕТ БЭКЕНДА
+            // ✅ ОБНОВЛЯЕМ ЗАДАНИЯ НА БЭКЕНДЕ
             await updateQuestProgress(habit.xp_reward, true);
-            renderDailyQuests();
-            await loadDailyQuests();
         } else {
             animateCharacter('sad', 1500);
             showNotification('⏳ Привычка отменена', 'info');
             
-            // ❌ НЕ ВЫЗЫВАЕМ updateQuestProgress, ПОКА НЕТ БЭКЕНДА
+            // ✅ ОБНОВЛЯЕМ ЗАДАНИЯ НА БЭКЕНДЕ
             await updateQuestProgress(habit.xp_reward, false);
-            renderDailyQuests();
-            await loadDailyQuests();
         }
     } catch (error) {
         console.error('Ошибка отметки привычки:', error);
@@ -361,8 +348,6 @@ async function deleteHabitHandler(habitId) {
         await refreshUserData();
         await loadHabits();
         updateUserInfo();
-        
-        // 🔥 ПЕРЕЗАГРУЖАЕМ ЕЖЕДНЕВНЫЕ ЗАДАНИЯ С БЭКЕНДА
         await loadDailyQuests();
         
         showNotification('✅ Привычка удалена!', 'success');

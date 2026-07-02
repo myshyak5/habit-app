@@ -78,6 +78,7 @@ function getUserData() {
 async function refreshUserData() {
     try {
         const userData = await apiRequest('/user/', 'GET');
+        console.log('📥 Данные с сервера:', userData);
         localStorage.setItem('avatar', userData.avatar_skin || '😊');
         localStorage.setItem('level', userData.level);
         localStorage.setItem('experience', userData.experience);

@@ -9,5 +9,5 @@ class DailyQuestSerializer(serializers.ModelSerializer):
         fields = [
             'quest_1_progress', 'quest_2_progress', 'quest_3_progress',
             'quest_1_completed', 'quest_2_completed', 'quest_3_completed',
-            'all_completed', 'rewarded'
+            'all_completed'
         ]
