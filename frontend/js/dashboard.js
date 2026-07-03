@@ -47,38 +47,6 @@ async function loadDailyQuests() {
 }
 
 // =============================================
-// 📤 ОБНОВЛЕНИЕ ПРОГРЕССА НА БЭКЕНДЕ
-// =============================================
-
-async function updateQuestProgress(habitXp, isCompleted = true) {
-    try {
-        const response = await apiRequest('/daily-quests/update/', 'POST', {
-            habit_xp: habitXp,
-            is_completed: isCompleted
-        });
-        
-        dailyQuestsProgress = {
-            [DAILY_QUESTS[0].id]: response.quest_1_progress || 0,
-            [DAILY_QUESTS[1].id]: response.quest_2_progress || 0,
-            [DAILY_QUESTS[2].id]: response.quest_3_progress || 0,
-        };
-        dailyQuestsCompleted = response.all_completed || false;
-        
-        renderDailyQuests();
-        
-        // if (response.rewarded && response.all_completed) {
-        //     showNotification('🎉 Все ежедневные задания выполнены!', 'success');
-        //     await refreshUserData();
-        //     updateUserInfo();
-        // }
-        
-        return response;
-    } catch (error) {
-        console.warn('Ошибка обновления прогресса:', error);
-    }
-}
-
-// =============================================
 // 🎨 ОТРИСОВКА ЕЖЕДНЕВНЫХ ЗАДАНИЙ
 // =============================================
 
@@ -291,6 +259,10 @@ function getUserData() {
 // 🎯 ОБРАБОТЧИКИ ПРИВЫЧЕК
 // =============================================
 
+// frontend/js/dashboard.js
+
+// Удалите функцию updateQuestProgress() - она больше не нужна
+
 async function toggleHabitHandler(habitId) {
     console.log('🔄 toggleHabitHandler ВЫЗВАН!', new Date().getTime());
     try {
@@ -304,33 +276,32 @@ async function toggleHabitHandler(habitId) {
         const today = new Date().toISOString().split('T')[0];
         let completed_dates = habit.completed_dates || [];
 
-        if (completed_dates.includes(today)) {
+        const isCurrentlyCompleted = completed_dates.includes(today);
+        
+        if (isCurrentlyCompleted) {
             completed_dates = completed_dates.filter(date => date !== today);
         } else {
             completed_dates.push(today);
         }
 
         await toggleHabit(habitId, completed_dates);
+        
+        // 🔥 ОБНОВЛЯЕМ ВСЁ
         await refreshUserData();
         await loadHabits();
         updateUserInfo();
         
-        const isCompleted = completed_dates.includes(today);
-
-        if (isCompleted) {
+        // 🔥 ЗАГРУЖАЕМ КВЕСТЫ ЗАНОВО (бэкенд сам всё пересчитал)
+        await loadDailyQuests();
+        
+        if (!isCurrentlyCompleted) {
             animateCharacter('veryHappy', 1500);
             const xpReward = habit.xp_reward || 10;
             const goldReward = Math.floor(xpReward / 2);
             showNotification(`✅ Привычка выполнена! +${xpReward} XP, +${goldReward} 💵`, 'success');
-            
-            // ✅ ОБНОВЛЯЕМ ЗАДАНИЯ НА БЭКЕНДЕ
-            await updateQuestProgress(habit.xp_reward, true);
         } else {
             animateCharacter('sad', 1500);
             showNotification('⏳ Привычка отменена', 'info');
-            
-            // ✅ ОБНОВЛЯЕМ ЗАДАНИЯ НА БЭКЕНДЕ
-            await updateQuestProgress(habit.xp_reward, false);
         }
     } catch (error) {
         console.error('Ошибка отметки привычки:', error);
@@ -339,6 +310,24 @@ async function toggleHabitHandler(habitId) {
     }
 }
 
+async function deleteHabitHandler(habitId) {
+    if (!confirm('🗑️ Вы уверены, что хотите удалить эту привычку?')) return;
+
+    try {
+        await deleteHabit(habitId);
+        
+        await refreshUserData();
+        await loadHabits();
+        updateUserInfo();
+        await loadDailyQuests();  // 👈 ДОБАВЬТЕ
+        
+        showNotification('✅ Привычка удалена!', 'success');
+        
+    } catch (error) {
+        console.error('Ошибка удаления:', error);
+        showNotification('❌ Ошибка: ' + error.message, 'error');
+    }
+}
 async function deleteHabitHandler(habitId) {
     if (!confirm('🗑️ Вы уверены, что хотите удалить эту привычку?')) return;
 

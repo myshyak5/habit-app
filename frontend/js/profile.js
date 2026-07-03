@@ -107,7 +107,7 @@ async function loadOwnedSkinsIntoSelector() {
 
 document.getElementById('saveAvatarBtn')?.addEventListener('click', async function() {
     try {
-        await apiRequest('/user/update_avatar/', 'PATCH', {
+        await apiRequest('/user/update-avatar/', 'POST', {
             avatar_skin: selectedAvatar
         });
         await refreshUserData();

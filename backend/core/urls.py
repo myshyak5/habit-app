@@ -1,9 +1,11 @@
+# backend/backend/urls.py
+
 from django.contrib import admin
 from django.urls import path, include
 from users.views import RegisterView, LoginView, UserProfileView, UpdateAvatarView, UserProfileUpdateView, DeleteUserView
 from rest_framework.routers import DefaultRouter
 from habits.views import HabitViewSet
-from daily_quests.views import get_quest_progress, update_quest_progress  # ← ДОБАВИТЬ update_quest_progress
+from daily_quests.views import get_quest_progress, update_quest_progress  # ✅ ИМПОРТ РАБОТАЕТ
 from shop.views import SkinViewSet
 
 
@@ -28,5 +30,5 @@ urlpatterns = [
     
     # Ежедневные задания
     path('api/daily-quests/', get_quest_progress, name='daily-quests'),
-    path('api/daily-quests/update/', update_quest_progress, name='daily-quests-update'),  # ← ДОБАВИТЬ
+    path('api/daily-quests/update/', update_quest_progress, name='daily-quests-update'),
 ]

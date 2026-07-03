@@ -3,18 +3,86 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.utils import timezone
+from datetime import date
 from .models import DailyQuest
 from .serializers import DailyQuestSerializer
+from django.apps import apps
 
 
+# =============================================
+# 🔥 ОБНОВЛЕНИЕ НАГРАД ЗА ЗАДАНИЯ
+# =============================================
+
+def update_quest_rewards(user, quest):
+    """Обновляет награды за задания (начисляет или отзывает)"""
+    quests = [
+        {'id': 1, 'completed': quest.quest_1_completed, 'rewarded': quest.quest_1_rewarded, 
+         'gold': 10, 'xp': 20, 'reward_field': 'quest_1_rewarded'},
+        {'id': 2, 'completed': quest.quest_2_completed, 'rewarded': quest.quest_2_rewarded,
+         'gold': 15, 'xp': 30, 'reward_field': 'quest_2_rewarded'},
+        {'id': 3, 'completed': quest.quest_3_completed, 'rewarded': quest.quest_3_rewarded,
+         'gold': 20, 'xp': 40, 'reward_field': 'quest_3_rewarded'},
+    ]
+    
+    for q in quests:
+        if q['completed'] and not q['rewarded']:
+            user.gold += q['gold']
+            user.add_experience(q['xp'])
+            setattr(quest, q['reward_field'], True)
+        elif not q['completed'] and q['rewarded']:
+            user.gold = max(0, user.gold - q['gold'])
+            user.add_experience(-q['xp'])
+            setattr(quest, q['reward_field'], False)
+    
+    user.save()
+    quest.save()
+
+
+# =============================================
+# 🔄 ПОЛНЫЙ ПЕРЕСЧЁТ ПРОГРЕССА
+# =============================================
+
+def recalculate_quest_progress(user):
+    """Полный пересчёт прогресса квестов на основе выполненных привычек"""
+    Habit = apps.get_model('habits', 'Habit')
+    
+    today = date.today()
+    today_str = today.isoformat()
+    
+    quest, created = DailyQuest.objects.get_or_create(user=user, date=today)
+    
+    habits = Habit.objects.filter(user=user, is_active=True)
+    completed_habits = [h for h in habits if today_str in (h.completed_dates or [])]
+    
+    quest.quest_1_progress = len(completed_habits)
+    quest.quest_2_progress = sum(1 for h in completed_habits if h.xp_reward >= 40)
+    quest.quest_3_progress = len(completed_habits)
+    
+    quest.quest_1_completed = quest.quest_1_progress >= 3
+    quest.quest_2_completed = quest.quest_2_progress >= 1
+    quest.quest_3_completed = quest.quest_3_progress >= 5
+    
+    quest.all_completed = (
+        quest.quest_1_completed and 
+        quest.quest_2_completed and 
+        quest.quest_3_completed
+    )
+    
+    update_quest_rewards(user, quest)
+    quest.save()
+    return quest
+
+
+# =============================================
+# 📋 API
+# =============================================
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_quest_progress(request):
     """Получить прогресс ежедневных заданий на сегодня"""
     user = request.user
-    today = timezone.now().date()
+    today = date.today()
     
     try:
         quest = DailyQuest.objects.get(user=user, date=today)
@@ -28,66 +96,24 @@ def get_quest_progress(request):
             'quest_1_completed': False,
             'quest_2_completed': False,
             'quest_3_completed': False,
+            'quest_1_rewarded': False,
+            'quest_2_rewarded': False,
+            'quest_3_rewarded': False,
             'all_completed': False,
-            'rewarded': False,
         })
-
-
-# =============================================
-# 🔥 ДОБАВИТЬ ЭТУ ФУНКЦИЮ
-# =============================================
-
-# backend/daily_quests/views.py
-
-# backend/daily_quests/views.py
 
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def update_quest_progress(request):
+    """
+    Обновить прогресс ежедневных заданий.
+    Использует полный пересчёт на основе выполненных привычек.
+    """
     user = request.user
-    today = timezone.now().date()
-    habit_xp = request.data.get('habit_xp', 0)
-    is_completed = request.data.get('is_completed', True)
     
-    quest, created = DailyQuest.objects.get_or_create(user=user, date=today)
-    
-    # ---- 1. ОБНОВЛЯЕМ ПРОГРЕСС ----
-    if is_completed:
-        quest.quest_1_progress += 1
-        if habit_xp >= 40:
-            quest.quest_2_progress += 1
-    else:
-        quest.quest_1_progress = max(0, quest.quest_1_progress - 1)
-        if habit_xp >= 40:
-            quest.quest_2_progress = max(0, quest.quest_2_progress - 1)
-    
-    quest.quest_3_progress = quest.quest_1_progress
-    
-    # ---- 2. ПРОВЕРЯЕМ ВЫПОЛНЕНИЕ ----
-    quest.quest_1_completed = quest.quest_1_progress >= 3
-    quest.quest_2_completed = quest.quest_2_progress >= 1
-    quest.quest_3_completed = quest.quest_3_progress >= 5
-    
-    quest.all_completed = (
-        quest.quest_1_completed and 
-        quest.quest_2_completed and 
-        quest.quest_3_completed
-    )
-    
-    # ❌ УДАЛИТЬ ВСЮ ЛОГИКУ С НАГРАДОЙ
-    # if quest.all_completed and not quest.rewarded:
-    #     user.gold += 45
-    #     user.experience += 90
-    #     user.save()
-    #     quest.rewarded = True
-    # elif not quest.all_completed and quest.rewarded:
-    #     user.gold = max(0, user.gold - 45)
-    #     user.experience = max(0, user.experience - 90)
-    #     user.save()
-    #     quest.rewarded = False
-    
-    quest.save()
+    # Полный пересчёт
+    quest = recalculate_quest_progress(user)
     
     return Response({
         'quest_1_progress': quest.quest_1_progress,
@@ -96,18 +122,8 @@ def update_quest_progress(request):
         'quest_1_completed': quest.quest_1_completed,
         'quest_2_completed': quest.quest_2_completed,
         'quest_3_completed': quest.quest_3_completed,
+        'quest_1_rewarded': quest.quest_1_rewarded,
+        'quest_2_rewarded': quest.quest_2_rewarded,
+        'quest_3_rewarded': quest.quest_3_rewarded,
         'all_completed': quest.all_completed,
-        # ❌ УДАЛИТЬ 'rewarded'
-        # 'rewarded': quest.rewarded,
     })
-def get_quest_data(quest):
-    return {
-        'quest_1_progress': quest.quest_1_progress,
-        'quest_2_progress': quest.quest_2_progress,
-        'quest_3_progress': quest.quest_3_progress,
-        'quest_1_completed': quest.quest_1_completed,
-        'quest_2_completed': quest.quest_2_completed,
-        'quest_3_completed': quest.quest_3_completed,
-        'all_completed': quest.all_completed,
-        'rewarded': quest.rewarded,
-    }
