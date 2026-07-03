@@ -7,14 +7,6 @@ let activityChart = null;
 let selectedAvatar = '😊';
 
 // =============================================
-// 📊 РАСЧЁТ ОПЫТА ДЛЯ УРОВНЯ
-// =============================================
-
-function getXpForLevel(level) {
-    return 100 + (level - 1) * 25;
-}
-
-// =============================================
 // 🚀 ЗАГРУЗКА СТРАНИЦЫ
 // =============================================
 
@@ -26,10 +18,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     updateProfile(user);
     highlightSelectedAvatar(selectedAvatar);
-    loadOwnedSkinsIntoSelector();
+    await loadOwnedSkinsIntoSelector();
     
     await loadProfileStats();
-    await loadChartData();
+    await loadChartData();  // ← ДОЛЖНО БЫТЬ
 });
 
 // =============================================
@@ -76,49 +68,41 @@ document.querySelectorAll('.avatar-option:not(.owned-skin)').forEach(option => {
 // 🎨 ЗАГРУЗКА КУПЛЕННЫХ СКИНОВ
 // =============================================
 
-function loadOwnedSkinsIntoSelector() {
+async function loadOwnedSkinsIntoSelector() {
     const container = document.getElementById('avatarSelector');
     if (!container) return;
 
     // Удаляем старые купленные скины
     container.querySelectorAll('.owned-skin').forEach(el => el.remove());
 
-    const saved = localStorage.getItem('userSkins');
-    let ownedSkinIds = [];
-    if (saved) {
-        ownedSkinIds = JSON.parse(saved);
-    }
+    try {
+        // 🔥 ЗАГРУЖАЕМ СКИНЫ С СЕРВЕРА
+        const user = await apiRequest('/user/', 'GET');
+        const ownedSkinIds = user.owned_skins || [];
+        const currentAvatar = user.avatar_skin || '😊';
 
-    const skins = window.SKINS || [
-        { id: 1, emoji: '🐹', name: 'Мышь', price: 200 },
-        { id: 2, emoji: '🐼', name: 'Панда', price: 250 },
-        { id: 3, emoji: '💃', name: 'Танцор', price: 300 },
-        { id: 4, emoji: '🦖', name: 'Динозавр', price: 350 },
-        { id: 5, emoji: '🐙', name: 'Осьминог', price: 400 },
-        { id: 6, emoji: '🛡️', name: 'Рыцарь', price: 450 },
-        { id: 7, emoji: '🦜', name: 'Попугай', price: 500 },
-        { id: 8, emoji: '👽', name: 'Пришелец', price: 550 },
-    ];
+        // Используем SKINS из глобальной области (из shop.js)
+        const skins = window.SKINS || [];
+        const ownedSkins = skins.filter(skin => ownedSkinIds.includes(skin.id));
 
-    const ownedSkins = skins.filter(skin => ownedSkinIds.includes(skin.id));
-    const currentAvatar = localStorage.getItem('avatar') || '😊';
-
-    ownedSkins.forEach(skin => {
-        const option = document.createElement('div');
-        option.className = `avatar-option owned-skin ${skin.emoji === currentAvatar ? 'selected' : ''}`;
-        option.dataset.avatar = skin.emoji;
-        option.textContent = skin.emoji;
-        option.title = skin.name;
-        
-        // ✅ ТОТ ЖЕ ОБРАБОТЧИК, ЧТО И У СТАНДАРТНЫХ АВАТАРОВ
-        option.addEventListener('click', function() {
-            selectedAvatar = this.dataset.avatar;
-            highlightSelectedAvatar(selectedAvatar);
-            document.getElementById('profileAvatar').textContent = selectedAvatar;
+        ownedSkins.forEach(skin => {
+            const option = document.createElement('div');
+            option.className = `avatar-option owned-skin ${skin.emoji === currentAvatar ? 'selected' : ''}`;
+            option.dataset.avatar = skin.emoji;
+            option.textContent = skin.emoji;
+            option.title = skin.name;
+            
+            option.addEventListener('click', function() {
+                selectedAvatar = this.dataset.avatar;
+                highlightSelectedAvatar(selectedAvatar);
+                document.getElementById('profileAvatar').textContent = selectedAvatar;
+            });
+            
+            container.appendChild(option);
         });
-        
-        container.appendChild(option);
-    });
+    } catch (error) {
+        console.warn('⚠️ Не удалось загрузить скины с сервера:', error);
+    }
 }
 
 // =============================================
@@ -157,14 +141,19 @@ document.getElementById('saveAvatarBtn')?.addEventListener('click', async functi
 
 async function loadProfileStats() {
     try {
-        const habits = await getHabits();
-        const totalCompleted = habits.reduce((sum, habit) => {
-            return sum + (habit.completed_dates || []).length;
-        }, 0);
+        // 🔥 Получаем данные пользователя С СЕРВЕРА (где хранится total_completed)
+        // (предполагается, что getUserData() обновится после refreshUserData)
+        const user = getUserData(); 
+        
+        // Берем готовое число из данных пользователя
+        const totalCompleted = user.total_completed || 0;
+        
+        // Вставляем в верстку
         document.getElementById('profileCompleted').textContent = totalCompleted;
-        return habits;
+        
+        return [];
     } catch (error) {
-        console.warn('Не удалось загрузить статистику с сервера:', error.message);
+        console.error('Ошибка загрузки статистики:', error);
         document.getElementById('profileCompleted').textContent = '0';
         document.getElementById('profileCompleted').style.color = '#999';
         return [];
@@ -193,7 +182,6 @@ async function loadChartData() {
                 }
             });
         });
-        
         createChart(dayNames, weekData);
     } catch (error) {
         console.error('Ошибка загрузки данных для графика:', error);
