@@ -1,15 +1,6 @@
 // frontend/js/shop.js
 
-const SKINS = [
-    { id: 1, emoji: '🐹', name: 'Хомяк', price: 200 },
-    { id: 2, emoji: '🐼', name: 'Панда', price: 400 },
-    { id: 3, emoji: '💃', name: 'Танцор', price: 600 },
-    { id: 4, emoji: '🦖', name: 'Динозавр', price: 800 },
-    { id: 5, emoji: '🐙', name: 'Осьминог', price: 1000 },
-    { id: 6, emoji: '🛡️', name: 'Рыцарь', price: 1200 },
-    { id: 7, emoji: '🦜', name: 'Попугай', price: 1300 },
-    { id: 8, emoji: '👽', name: 'Пришелец', price: 1500 },
-];
+let SKINS = [];
 
 let selectedSkin = null;
 let userSkins = [];
@@ -18,9 +9,48 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
     const user = getUserData();
     updateGold(user.gold);
-    await loadUserSkins();  // 👈 ДОБАВИЛИ await
+    await loadSkinsFromServer();
+    await loadUserSkins(); // 👈 ДОБАВИЛИ await
     renderShop();
 });
+
+
+// ✅ ЗАГРУЗКА СКИНОВ С БЭКЕНДА
+async function loadSkinsFromServer() {
+    try {
+        const response = await apiRequest('/skins/', 'GET');
+        SKINS = response.map(skin => ({
+            id: skin.id,
+            emoji: skin.emoji,
+            name: skin.name,
+            price: skin.price
+        }));
+        console.log('📦 Скины загружены с сервера:', SKINS);
+    } catch (error) {
+        console.error('❌ Ошибка загрузки скинов:', error);
+        SKINS = [];
+        showMessage('❌ Не удалось загрузить скины', 'error');
+    }
+}
+
+// ✅ ЗАГРУЗКА СКИНОВ ПОЛЬЗОВАТЕЛЯ
+async function loadUserSkins() {
+    try {
+        const user = await apiRequest('/user/', 'GET');
+        userSkins = user.owned_skins || [];
+        console.log('📦 Скины пользователя:', userSkins);
+        
+        const currentAvatar = user.avatar_skin || '😊';
+        const currentSkin = SKINS.find(s => s.emoji === currentAvatar);
+        selectedSkin = currentSkin ? currentSkin.id : null;
+        console.log('🎨 Выбранный скин:', selectedSkin);
+    } catch (error) {
+        console.warn('⚠️ Не удалось загрузить скины пользователя:', error);
+        userSkins = [];
+        selectedSkin = null;
+    }
+}
+
 
 function updateGold(gold) {
     const el = document.getElementById('shopGold');
@@ -149,14 +179,19 @@ async function selectSkin(skinId) {
     localStorage.setItem('avatar', skin.emoji);
     
     try {
-        await apiRequest('/user/update-avatar/', 'POST', { avatar_skin: skin.emoji });
+        await apiRequest('/user/update-avatar/', 'POST', { 
+            avatar_skin: skin.emoji,
+            selected_skin: skinId  // ← Добавляем ID выбранного скина
+        });
+        
+        await refreshUserData();
+        showMessage(`✅ Скин "${skin.name}" выбран!`, 'success');
     } catch (error) {
-        console.warn('⚠️ Не удалось сохранить аватар на сервере:', error);
+        console.warn('⚠️ Не удалось сохранить аватар:', error);
     }
     
-    updateShopSelection(skinId);
+    renderShop();
     updateAvatarOnDashboard(skin.emoji);
-    showMessage(`✅ Скин "${skin.name}" выбран!`, 'success');
 }
 
 function updateShopSelection(skinId) {
