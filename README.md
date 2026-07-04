@@ -29,4 +29,4 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 ```
-Далее открыть index.html
+Далее открыть frontend/index.html в браузере
