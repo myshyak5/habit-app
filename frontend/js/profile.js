@@ -307,12 +307,8 @@ function createChart(labels, data) {
                 datasets: [{
                     label: 'Выполнено привычек',
                     data: data,
-                    backgroundColor: data.map(value => 
-                        value === maxValue && maxValue > 0 ? '#764ba2' : '#667eea'
-                    ),
-                    borderColor: data.map(value => 
-                        value === maxValue && maxValue > 0 ? '#764ba2' : '#667eea'
-                    ),
+                    backgroundColor: 'rgba(118, 75, 162, 0.8)',  // фиолетовый
+                    borderColor: 'rgba(118, 75, 162, 1)',        // фиолетовый
                     borderWidth: 2,
                     borderRadius: {
                         topLeft: 8,
@@ -320,8 +316,8 @@ function createChart(labels, data) {
                         bottomLeft: 0,
                         bottomRight: 0
                     },
-                    barPercentage: 0.7,
-                    categoryPercentage: 0.8,
+                    barPercentage: 0.6,
+                    categoryPercentage: 0.9,
                 }]
             },
             options: {
@@ -329,20 +325,6 @@ function createChart(labels, data) {
                 maintainAspectRatio: true,
                 plugins: {
                     legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(255,255,255,0.95)',
-                        titleColor: '#333',
-                        bodyColor: '#667eea',
-                        borderColor: '#667eea',
-                        borderWidth: 2,
-                        cornerRadius: 8,
-                        padding: 12,
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.parsed.y} привычек`;
-                            }
-                        }
-                    }
                 },
                 scales: {
                     y: {
@@ -370,54 +352,4 @@ function createChart(labels, data) {
     } catch (error) {
         console.error('Ошибка создания графика:', error);
     }
-}
-
-// =============================================
-// 🔔 УВЕДОМЛЕНИЯ
-// =============================================
-
-function showNotification(message, type = 'info') {
-    const colors = {
-        success: '#2ecc71',
-        error: '#e74c3c',
-        info: '#3498db',
-        warning: '#f39c12'
-    };
-    
-    // Удаляем старые уведомления
-    document.querySelectorAll('.notification-toast').forEach(el => el.remove());
-    
-    const notification = document.createElement('div');
-    notification.className = 'notification-toast';
-    notification.style.cssText = `
-        position: fixed;
-        top: 80px;
-        right: 20px;
-        padding: 15px 25px;
-        background: ${colors[type] || colors.info};
-        color: white;
-        border-radius: 10px;
-        font-weight: 600;
-        z-index: 9999;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        max-width: 400px;
-        font-size: 14px;
-        transform: translateX(120%);
-        opacity: 0;
-        transition: transform 0.4s ease, opacity 0.4s ease;
-    `;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    // Анимация появления
-    void notification.offsetHeight;
-    notification.style.transform = 'translateX(0)';
-    notification.style.opacity = '1';
-    
-    // Автоматическое скрытие
-    setTimeout(() => {
-        notification.style.transform = 'translateX(120%)';
-        notification.style.opacity = '0';
-        setTimeout(() => notification.remove(), 400);
-    }, 3000);
 }

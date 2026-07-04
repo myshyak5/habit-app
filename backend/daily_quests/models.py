@@ -17,8 +17,7 @@ class DailyQuest(models.Model):
     quest_2_rewarded = models.BooleanField(default=False)
     quest_3_rewarded = models.BooleanField(default=False)
     all_completed = models.BooleanField(default=False)
-    # rewarded = models.BooleanField(default=False)
-    # processed_habits = models.JSONField(default=list, blank=True)
+    all_rewarded = models.BooleanField(default=False)
     
     class Meta:
         unique_together = ['user', 'date']

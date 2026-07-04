@@ -24,6 +24,11 @@ def update_quest_rewards(user, quest):
          'gold': 20, 'xp': 40, 'reward_field': 'quest_3_rewarded'},
     ]
     
+    # 👇 БОНУС ЗА ВСЕ ЗАДАНИЯ
+    all_completed = quest.quest_1_completed and quest.quest_2_completed and quest.quest_3_completed
+    bonus_gold = 25
+    bonus_xp = 50
+    
     for q in quests:
         if q['completed'] and not q['rewarded']:
             user.gold += q['gold']
@@ -33,6 +38,18 @@ def update_quest_rewards(user, quest):
             user.gold = max(0, user.gold - q['gold'])
             user.add_experience(-q['xp'])
             setattr(quest, q['reward_field'], False)
+    
+    # 👇 НАЧИСЛЯЕМ БОНУС, ЕСЛИ ВСЕ ВЫПОЛНЕНЫ
+    if all_completed and not quest.all_rewarded:
+        user.gold += bonus_gold
+        user.add_experience(bonus_xp)
+        quest.all_rewarded = True
+        print(f"🎉 Бонус за все задания: +{bonus_gold} 💵 +{bonus_xp} XP")
+    elif not all_completed and quest.all_rewarded:
+        user.gold = max(0, user.gold - bonus_gold)
+        user.add_experience(-bonus_xp)
+        quest.all_rewarded = False
+        print(f"⏳ Бонус за все задания отозван")
     
     user.save()
     quest.save()
@@ -84,12 +101,61 @@ def get_quest_progress(request):
     user = request.user
     today = date.today()
     
+    # Базовое описание заданий
+    quests_info = [
+        {
+            'id': 1,
+            'name': '💪 Выполнить 3 привычки',
+            'description': 'Отметь 3 любые привычки сегодня',
+            'target': 3,
+            'reward_gold': 10,
+            'reward_xp': 20,
+        },
+        {
+            'id': 2,
+            'name': '📚 Выполнить сложную привычку',
+            'description': 'Выполни привычку с наградой 40+ XP',
+            'target': 1,
+            'reward_gold': 15,
+            'reward_xp': 30,
+        },
+        {
+            'id': 3,
+            'name': '🔥 Серия из 5 привычек',
+            'description': 'Выполни 5 привычек подряд без пропусков',
+            'target': 5,
+            'reward_gold': 20,
+            'reward_xp': 40,
+        },
+    ]
+    
     try:
         quest = DailyQuest.objects.get(user=user, date=today)
         serializer = DailyQuestSerializer(quest)
-        return Response(serializer.data)
+        data = serializer.data
+        
+        # Добавляем прогресс к каждому заданию
+        data['quests_info'] = []
+        for q in quests_info:
+            progress_key = f'quest_{q["id"]}_progress'
+            completed_key = f'quest_{q["id"]}_completed'
+            q_data = q.copy()
+            q_data['progress'] = data.get(progress_key, 0)
+            q_data['completed'] = data.get(completed_key, False)
+            data['quests_info'].append(q_data)
+        
+        # Добавляем информацию о бонусе
+        data['bonus'] = {
+            'gold': 25,
+            'xp': 50,
+            'all_completed': quest.all_completed,
+            'all_rewarded': quest.all_rewarded,
+        }
+        
+        return Response(data)
+        
     except DailyQuest.DoesNotExist:
-        return Response({
+        data = {
             'quest_1_progress': 0,
             'quest_2_progress': 0,
             'quest_3_progress': 0,
@@ -100,7 +166,21 @@ def get_quest_progress(request):
             'quest_2_rewarded': False,
             'quest_3_rewarded': False,
             'all_completed': False,
-        })
+            'bonus': {
+                'gold': 25,
+                'xp': 50,
+                'all_completed': False,
+                'all_rewarded': False,
+            }
+        }
+        data['quests_info'] = []
+        for q in quests_info:
+            q_data = q.copy()
+            q_data['progress'] = 0
+            q_data['completed'] = False
+            data['quests_info'].append(q_data)
+        
+        return Response(data)
 
 
 @api_view(['POST'])
@@ -112,10 +192,36 @@ def update_quest_progress(request):
     """
     user = request.user
     
-    # Полный пересчёт
     quest = recalculate_quest_progress(user)
     
-    return Response({
+    quests_info = [
+        {
+            'id': 1,
+            'name': '💪 Выполнить 3 привычки',
+            'description': 'Отметь 3 любые привычки сегодня',
+            'target': 3,
+            'reward_gold': 10,
+            'reward_xp': 20,
+        },
+        {
+            'id': 2,
+            'name': '📚 Выполнить сложную привычку',
+            'description': 'Выполни привычку с наградой 40+ XP',
+            'target': 1,
+            'reward_gold': 15,
+            'reward_xp': 30,
+        },
+        {
+            'id': 3,
+            'name': '🔥 Серия из 5 привычек',
+            'description': 'Выполни 5 привычек подряд без пропусков',
+            'target': 5,
+            'reward_gold': 20,
+            'reward_xp': 40,
+        },
+    ]
+    
+    response_data = {
         'quest_1_progress': quest.quest_1_progress,
         'quest_2_progress': quest.quest_2_progress,
         'quest_3_progress': quest.quest_3_progress,
@@ -126,4 +232,21 @@ def update_quest_progress(request):
         'quest_2_rewarded': quest.quest_2_rewarded,
         'quest_3_rewarded': quest.quest_3_rewarded,
         'all_completed': quest.all_completed,
-    })
+        'bonus': {
+            'gold': 25,
+            'xp': 50,
+            'all_completed': quest.all_completed,
+            'all_rewarded': quest.all_rewarded,
+        }
+    }
+    
+    response_data['quests_info'] = []
+    for q in quests_info:
+        progress_key = f'quest_{q["id"]}_progress'
+        completed_key = f'quest_{q["id"]}_completed'
+        q_data = q.copy()
+        q_data['progress'] = getattr(quest, progress_key, 0)
+        q_data['completed'] = getattr(quest, completed_key, False)
+        response_data['quests_info'].append(q_data)
+    
+    return Response(response_data)

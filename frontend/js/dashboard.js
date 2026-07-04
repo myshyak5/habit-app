@@ -17,14 +17,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 // 📋 ЕЖЕДНЕВНЫЕ ЗАДАНИЯ
 // =============================================
 
-const DAILY_QUESTS = [
-    { id: 1, name: '💪 Выполнить 3 привычки', description: 'Отметь 3 любые привычки сегодня', target: 3, rewardGold: 10, rewardXp: 20 },
-    { id: 2, name: '📚 Выполнить сложную привычку', description: 'Выполни привычку с наградой 40+ XP', target: 1, rewardGold: 15, rewardXp: 30 },
-    { id: 3, name: '🔥 Серия из 5 привычек', description: 'Выполни 5 привычек подряд без пропусков', target: 5, rewardGold: 20, rewardXp: 40 },
-];
-
-let dailyQuestsProgress = {};
+let dailyQuestsData = [];
 let dailyQuestsCompleted = false;
+let bonusData = null;  // 👈 ДОБАВИТЬ
 
 // =============================================
 // 📥 ЗАГРУЗКА ПРОГРЕССА С БЭКЕНДА
@@ -33,12 +28,12 @@ let dailyQuestsCompleted = false;
 async function loadDailyQuests() {
     try {
         const response = await apiRequest('/daily-quests/', 'GET');
-        dailyQuestsProgress = {
-            [DAILY_QUESTS[0].id]: response.quest_1_progress || 0,
-            [DAILY_QUESTS[1].id]: response.quest_2_progress || 0,
-            [DAILY_QUESTS[2].id]: response.quest_3_progress || 0,
-        };
+        console.log('📋 Данные с бэкенда:', response);
+        
+        dailyQuestsData = response.quests_info || [];
         dailyQuestsCompleted = response.all_completed || false;
+        bonusData = response.bonus || null;  // 👈 ДОБАВИТЬ
+        
         renderDailyQuests();
     } catch (error) {
         console.warn('Ежедневные задания недоступны:', error);
@@ -54,24 +49,18 @@ function renderDailyQuests() {
     const container = document.getElementById('dailyQuestsList');
     if (!container) return;
 
-    if (Object.keys(dailyQuestsProgress).length === 0) {
+    if (!dailyQuestsData || dailyQuestsData.length === 0) {
         renderDailyQuestsEmpty();
         return;
     }
 
-    const quests = DAILY_QUESTS.map(quest => ({
-        ...quest,
-        progress: dailyQuestsProgress[quest.id] || 0,
-        completed: dailyQuestsCompleted || dailyQuestsProgress[quest.id] >= quest.target
-    }));
+    const allCompleted = dailyQuestsData.every(q => q.completed);
 
-    const allCompleted = quests.every(q => q.completed);
-
-    container.innerHTML = quests.map(quest => {
-        const progress = quest.progress;
-        const target = quest.target;
+    container.innerHTML = dailyQuestsData.map(quest => {
+        const progress = quest.progress || 0;
+        const target = quest.target || 1;
         const percent = Math.min((progress / target) * 100, 100);
-        const isCompleted = quest.completed;
+        const isCompleted = quest.completed || false;
 
         return `
             <div class="daily-quest-item ${isCompleted ? 'completed' : ''}">
@@ -84,22 +73,29 @@ function renderDailyQuests() {
                     <span style="font-size:12px;color:#666;min-width:30px;">${progress}/${target}</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
-                    <div class="quest-reward">+${quest.rewardGold} 💵 +${quest.rewardXp} XP</div>
+                    <div class="quest-reward">+${quest.reward_gold} 💰 +${quest.reward_xp} XP</div>
                     <div class="quest-status">${isCompleted ? '✅' : '⏳'}</div>
                 </div>
             </div>
         `;
     }).join('');
 
-    // if (allCompleted) {
-    //     const totalGold = DAILY_QUESTS.reduce((sum, q) => sum + q.rewardGold, 0);
-    //     const totalXp = DAILY_QUESTS.reduce((sum, q) => sum + q.rewardXp, 0);
-    //     container.innerHTML += `
-    //         <div style="text-align:center;padding:12px;background:#d4edda;border-radius:10px;margin-top:10px;color:#155724;font-weight:600;font-size:13px;">
-    //             🎉 Все выполнено! +${totalGold} 💵 +${totalXp} XP
-    //         </div>
-    //     `;
-    // }
+    // 👇 БОНУС ЗА ВСЕ ЗАДАНИЯ (данные с бэкенда)
+    if (allCompleted && dailyQuestsData.length > 0) {
+        const bonusGold = bonusData?.gold || 25;
+        const bonusXp = bonusData?.xp || 50;
+        const allRewarded = bonusData?.all_rewarded || false;
+        
+        container.innerHTML += `
+            <div style="text-align:center;padding:12px;background:#d4edda;border-radius:10px;margin-top:10px;color:#155724;font-weight:600;font-size:15px;">
+                Все задания выполнены!
+                <br>
+                <span style="font-size:13px;color:#1e7e34;">
+                    +${bonusGold} 💰 +${bonusXp} XP ${allRewarded ? '✅' : ''}
+                </span>
+            </div>
+        `;
+    }
 }
 
 function renderDailyQuestsEmpty() {
@@ -148,14 +144,14 @@ async function loadHabits() {
             habitsList.innerHTML = `
                 <div class="empty-state">
                     <p>😴 У вас пока нет привычек</p>
-                    <p style="font-size:14px;">Нажмите кнопку ниже, чтобы добавить первую</p>
+                    <p style="font-size:14px;">Нажмите кнопку выше, чтобы добавить первую</p>
                 </div>
             `;
             return;
         }
 
         habitsList.innerHTML = habits.map(habit => {
-            const completed = isCompletedToday(habit.completed_dates);
+            const completed = habit.is_completed_today;
             const xpReward = habit.xp_reward || 10;
             const goldReward = Math.floor(xpReward / 2);
             
@@ -172,7 +168,7 @@ async function loadHabits() {
                         ${habit.description ? `<span style="color:#999;font-size:12px;">${habit.description}</span>` : ''}
                     </div>
                     <div style="display:flex;align-items:center;gap:10px;">
-                        <span style="font-size:12px;color:#888;">+${goldReward} 💵</span>
+                        <span style="font-size:12px;color:#888;">+${goldReward} 💰</span>
                         <span style="font-size:12px;color:#888;">+${xpReward} XP</span>
                         <button 
                             onclick="deleteHabitHandler(${habit.id})" 
@@ -259,10 +255,6 @@ function getUserData() {
 // 🎯 ОБРАБОТЧИКИ ПРИВЫЧЕК
 // =============================================
 
-// frontend/js/dashboard.js
-
-// Удалите функцию updateQuestProgress() - она больше не нужна
-
 async function toggleHabitHandler(habitId) {
     console.log('🔄 toggleHabitHandler ВЫЗВАН!', new Date().getTime());
     try {
@@ -286,19 +278,16 @@ async function toggleHabitHandler(habitId) {
 
         await toggleHabit(habitId, completed_dates);
         
-        // 🔥 ОБНОВЛЯЕМ ВСЁ
         await refreshUserData();
         await loadHabits();
         updateUserInfo();
-        
-        // 🔥 ЗАГРУЖАЕМ КВЕСТЫ ЗАНОВО (бэкенд сам всё пересчитал)
         await loadDailyQuests();
         
         if (!isCurrentlyCompleted) {
             animateCharacter('veryHappy', 1500);
             const xpReward = habit.xp_reward || 10;
             const goldReward = Math.floor(xpReward / 2);
-            showNotification(`✅ Привычка выполнена! +${xpReward} XP, +${goldReward} 💵`, 'success');
+            showNotification(`✅ Привычка выполнена! +${xpReward} XP, +${goldReward} 💰`, 'success');
         } else {
             animateCharacter('sad', 1500);
             showNotification('⏳ Привычка отменена', 'info');
@@ -310,24 +299,6 @@ async function toggleHabitHandler(habitId) {
     }
 }
 
-async function deleteHabitHandler(habitId) {
-    if (!confirm('🗑️ Вы уверены, что хотите удалить эту привычку?')) return;
-
-    try {
-        await deleteHabit(habitId);
-        
-        await refreshUserData();
-        await loadHabits();
-        updateUserInfo();
-        await loadDailyQuests();  // 👈 ДОБАВЬТЕ
-        
-        showNotification('✅ Привычка удалена!', 'success');
-        
-    } catch (error) {
-        console.error('Ошибка удаления:', error);
-        showNotification('❌ Ошибка: ' + error.message, 'error');
-    }
-}
 async function deleteHabitHandler(habitId) {
     if (!confirm('🗑️ Вы уверены, что хотите удалить эту привычку?')) return;
 
@@ -371,28 +342,24 @@ function animateCharacter(emotion = 'happy', duration = 1500) {
         default: localStorage.getItem('avatar') || '😊'
     };
 
-    avatar.style.transition = 'none';
-    avatar.style.transform = 'scale(1)';
-    avatar.style.fontSize = '40px';
-    void avatar.offsetHeight;
-
     avatar.textContent = emotions[emotion] || emotions.default;
-    avatar.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), font-size 0.4s ease';
-    avatar.style.transform = 'scale(1.1) rotate(5deg)';
-    avatar.style.fontSize = '45px';
-
+    
+    avatar.style.transition = 'transform 0.3s ease';
+    avatar.style.transform = 'rotate(-10deg) scale(1.1)';
+    
     setTimeout(() => {
-        avatar.style.transition = 'transform 0.3s ease, font-size 0.3s ease';
-        avatar.style.transform = 'scale(1) rotate(0deg)';
-        avatar.style.fontSize = '40px';
-    }, 400);
+        avatar.style.transform = 'rotate(10deg) scale(1.1)';
+    }, 200);
+    
+    setTimeout(() => {
+        avatar.style.transform = 'rotate(0deg) scale(1)';
+    }, 500);
 
     if (emotion !== 'default') {
         animationTimer = setTimeout(() => {
             const savedAvatar = localStorage.getItem('avatar') || '😊';
             avatar.textContent = savedAvatar;
             avatar.style.transform = 'scale(1) rotate(0deg)';
-            avatar.style.fontSize = '40px';
             animationTimer = null;
         }, duration);
     }

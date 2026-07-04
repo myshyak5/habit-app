@@ -24,6 +24,7 @@
         .profile-header {
             display: flex;
             align-items: center;
+            padding-left: 5%;
             gap: 25px;
             margin-bottom: 25px;
         }
@@ -38,14 +39,11 @@
             justify-content: center;
             border-radius: 50%;
             border: 4px solid #667eea;
-            transition: transform 0.3s;
             overflow: hidden;
             padding: 0;
             margin: 0;
-        }
-
-        .profile-avatar:hover {
-            transform: scale(1.05);
+            line-height: 1;
+            flex-shrink: 0;
         }
 
         .profile-name {
@@ -56,11 +54,13 @@
         .profile-level-badge {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
+            padding: 8px 15px;
+            border-radius: 15px;
             font-size: 14px;
             font-weight: 600;
             display: inline-block;
+            line-height: 1;
+            vertical-align: middle;
         }
 
         .profile-stats {
@@ -116,15 +116,17 @@
         }
 
         .avatar-selector {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, 70px);
             gap: 15px;
-            flex-wrap: wrap;
-            margin: 15px 0;
+            margin: 15px auto;           /* ← центрируем блок */
+            justify-content: center;     /* ← центрируем сетку */
+            max-width: 100%;
         }
 
         .avatar-option {
             font-size: 40px;
-            padding: 10px;
+            padding: 0;
             border: 3px solid #ddd;
             border-radius: 12px;
             cursor: pointer;
@@ -135,6 +137,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            line-height: 1;
         }
 
         .avatar-option:hover {
@@ -297,7 +300,7 @@
                     <div class="stat-label">Опыт (XP)</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">💵</div>
+                    <div class="stat-icon">💰</div>
                     <div class="stat-value" id="profileGold">0</div>
                     <div class="stat-label">Золото</div>
                 </div>
@@ -344,6 +347,7 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/notifications.js"></script>
     <script src="js/habits.js"></script>
     <script src="js/profile.js"></script>
 </body>

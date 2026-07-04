@@ -60,13 +60,12 @@
             padding: 20px 15px;
             text-align: center;
             box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
             border: 2px solid transparent;
             display: flex;
             flex-direction: column;
             height: 100%;
             min-height: 220px;
-            will-change: transform;
             cursor: default;
         }
 
@@ -120,6 +119,7 @@
             border: none;
             margin-top: auto;
             letter-spacing: 0.3px;
+            transition: background 0.2s ease, box-shadow 0.2s ease;
         }
 
         .shop-item .btn-buy:not(:disabled):not(.owned):not(.selected) {
@@ -129,7 +129,8 @@
         }
 
         .shop-item .btn-buy:not(:disabled):not(.owned):not(.selected):hover {
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #5a6fd6 0%, #6a3f8e 100%);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
         .shop-item .btn-buy.selected {
@@ -147,7 +148,7 @@
 
         .shop-item .btn-buy.owned:not(.selected):hover {
             background: #28a745;
-            box-shadow: 0 6px 20px rgba(52, 199, 89, 0.4);
+            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.4);
         }
 
         .shop-item .btn-buy:disabled {
@@ -236,7 +237,7 @@
         <div class="shop-box" style="background:white;padding:30px;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
             <div class="shop-header">
                 <h1 class="shop-title">🛒 Магазин скинов</h1>
-                <div class="shop-gold">💵 <span id="shopGold">0</span></div>
+                <div class="shop-gold"><span id="shopGold">0</span> 💰</div>
             </div>
 
             <div class="shop-grid" id="shopGrid">
@@ -248,6 +249,7 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/notifications.js"></script>
     <script src="js/shop.js"></script>
 </body>
 </html>

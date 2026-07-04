@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Дашборд - Habit RPG</title>
     <link rel="stylesheet" href="css/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* ===== ОБЩИЙ КОНТЕЙНЕР ===== */
         .dashboard-wrapper {
@@ -21,12 +22,168 @@
             min-width: 0;
         }
 
+        /* ===== ДАШБОРД ===== */
+        .dashboard-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 20px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .avatar {
+            font-size: 54px;  
+        }
+
+        .user-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .user-stats span {
+            background: #f0f0f0;
+            padding: 8px 15px;
+            border-radius: 15px;
+        }
+
+        .user-stats span span {
+            padding-right: 0;
+        }
+
+        /* ===== ПРОГРЕСС-БАР ===== */
+        .progress-container {
+            background: transparent;
+            border-radius: 12px;
+            padding: 20px 5px 10px;
+            margin: 10px 0 35px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 24px;
+            background: #e9ecef;
+            border-radius: 12px;
+            overflow: visible;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            transition: width 0.5s ease-in-out;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 6px;
+            min-width: 30px;
+        }
+
+        .progress-percent {
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            line-height: 1;
+        }
+
+        .xp-tooltip {
+            position: absolute;
+            bottom: calc(100% + 7px);
+            left: 50%;
+            transform: translateX(-50%) scale(0.95);
+            background: #2d3436;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 100;
+            pointer-events: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .xp-tooltip::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+            border-top: 7px solid #2d3436;
+        }
+
+        .progress-bar:hover .xp-tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) scale(1);
+        }
+
+        #xpProgressText {
+            display: block;
+            margin-top: 8px;
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .progress-fill.animating {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+            background-size: 200% auto;
+            animation: shimmer 1.5s linear infinite;
+        }
+
         .dashboard-box {
             background: white;
             padding: 30px;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             height: 100%;
+        }
+
+        /* ===== ГРАФИК ===== */
+        .chart-container {
+            margin: 20px 0 15px 0;
+        }
+
+        .chart-container h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .chart-container canvas {
+            max-width: 100%;
+            max-height: 200px;
         }
 
         /* ===== КНОПКА ДОБАВЛЕНИЯ НАД СПИСКОМ ===== */
@@ -54,20 +211,18 @@
 
         /* ===== БОКОВАЯ ПАНЕЛЬ (ФИКСИРОВАННАЯ) ===== */
         .sidebar {
-            flex: 0 0 280px;
+            flex: 0 0 300px;
             min-width: 0;
             align-self: flex-start;
             position: sticky;
             height: fit-content;
-            max-height: calc(100vh - 110px);
-            overflow-y: auto;
         }
 
         .sidebar-box {
             background: white;
             padding: 20px;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
         }
 
         .sidebar-box h3 {
@@ -141,21 +296,6 @@
             text-align: right;
         }
 
-        /* ===== СТИЛИ ДЛЯ СКРОЛЛА САЙДБАРА ===== */
-        .sidebar::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .sidebar::-webkit-scrollbar-track {
-            background: #f0f0f0;
-            border-radius: 10px;
-        }
-
-        .sidebar::-webkit-scrollbar-thumb {
-            background: #667eea;
-            border-radius: 10px;
-        }
-
         /* ===== МОДАЛЬНОЕ ОКНО ===== */
         .modal {
             position: fixed;
@@ -187,7 +327,6 @@
             color: #333;
         }
 
-        /* ===== ВЫБОР СЛОЖНОСТИ ===== */
         .difficulty-selector {
             display: flex;
             gap: 10px;
@@ -239,7 +378,6 @@
             color: #888;
         }
 
-        /* ===== АДАПТИВ ===== */
         @media (max-width: 900px) {
             .dashboard-wrapper {
                 flex-direction: column;
@@ -285,7 +423,7 @@
                             <div class="user-stats">
                                 <span>🏆 Уровень <span id="levelDisplay">1</span></span>
                                 <span>⭐ Опыт <span id="xpDisplay">0</span></span>
-                                <span>💵 Золото <span id="goldDisplay">0</span></span>
+                                <span>💰 Золото <span id="goldDisplay">0</span></span>
                             </div>
                         </div>
                     </div>
@@ -303,20 +441,24 @@
                     </div>
                     <span id="xpProgressText">До следующего уровня необходимо 100 XP</span>
                 </div>
+
                 <!-- Кнопка добавления -->
                 <button class="add-habit-btn" id="addHabitBtn">➕ Добавить привычку</button>
+
                 <!-- Список привычек -->
                 <div class="habits-list" id="habitsList">
                     <div class="empty-state">
                         <p>😴 У вас пока нет привычек</p>
-                        <p style="font-size:14px;">Нажмите кнопку ниже, чтобы добавить первую</p>
+                        <p style="font-size:14px;">Нажмите кнопку выше, чтобы добавить первую</p>
                     </div>
                 </div>
             </div>
         </main>
 
         <!-- ===== БОКОВАЯ КОЛОНКА С ЗАДАНИЯМИ ===== -->
+        <!-- ===== БОКОВАЯ КОЛОНКА ===== -->
         <aside class="sidebar">
+            <!-- Ежедневные задания -->
             <div class="sidebar-box">
                 <h3>📋 Ежедневные задания</h3>
                 <div id="dailyQuestsList">
@@ -365,6 +507,7 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/notifications.js"></script>
     <script src="js/habits.js"></script>
     <script src="js/dashboard.js"></script>
 </body>
