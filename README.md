@@ -4,7 +4,7 @@
 
 ## Стек
 
-**Бэкенд:** Django + DRF  
+**Бэкенд:** Python + Django
 **Фронтенд:** HTML, CSS, JS  
 **БД:** SQLite  
 **Графики:** Chart.js  
