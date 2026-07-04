@@ -209,7 +209,7 @@ document.getElementById('deleteAccountBtn')?.addEventListener('click', async fun
             localStorage.clear();
             setTimeout(() => {
                 window.location.href = 'index.html';
-            }, 1500);
+            }, 1000);
         }
     } catch (error) {
         console.error('Ошибка удаления аккаунта:', error);
