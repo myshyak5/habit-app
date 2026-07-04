@@ -8,7 +8,17 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div id="navbar"></div>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">🎮 Habit RPG</div>
+            <nav class="nav-links">
+                <a href="dashboard.html" class="nav-link" data-page="dashboard" class="active">📊 Дашборд</a>
+                <a href="profile.html" class="nav-link" data-page="profile">👤 Профиль</a>
+                <a href="shop.html" class="nav-link" data-page="shop">🛒 Магазин</a>
+            </nav>
+            <button onclick="logoutUser()" class="btn-logout">Выйти</button>
+        </div>
+    </header>
     <div class="dashboard-wrapper">
         <main class="dashboard-container">
             <div class="dashboard-box">
@@ -88,7 +98,6 @@
     </div>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
-    <script src="js/navbar.js"></script>
     <script src="js/notifications.js"></script>
     <script src="js/habits.js"></script>
     <script src="js/dashboard.js"></script>
