@@ -49,9 +49,9 @@ function renderDailyQuests() {
                     <div class="quest-progress-bar">
                         <div class="quest-progress-fill" style="width: ${percent}%;"></div>
                     </div>
-                    <span style="font-size:12px;color:#666;min-width:30px;">${progress}/${target}</span>
+                    <span class="quest-progress-text">${progress}/${target}</span>
                 </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
+                <div class="quest-reward-wrapper">
                     <div class="quest-reward">+${quest.reward_gold} 💰 +${quest.reward_xp} XP</div>
                     <div class="quest-status">${isCompleted ? '✅' : '⏳'}</div>
                 </div>
@@ -65,10 +65,10 @@ function renderDailyQuests() {
         const allRewarded = bonusData?.all_rewarded || false;
         
         container.innerHTML += `
-            <div style="text-align:center;padding:12px;background:#d4edda;border-radius:10px;margin-top:10px;color:#155724;font-weight:600;font-size:15px;">
+            <div class="quest-bonus">
                 Все задания выполнены!
                 <br>
-                <span style="font-size:13px;color:#1e7e34;">
+                <span class="quest-bonus-text">
                     +${bonusGold} 💰 +${bonusXp} XP ${allRewarded ? '✅' : ''}
                 </span>
             </div>
@@ -81,9 +81,7 @@ function renderDailyQuestsEmpty() {
     if (!container) return;
     
     container.innerHTML = `
-        <div style="text-align:center;color:#999;padding:10px;font-size:13px;">
-            📋 Ежедневные задания будут доступны позже
-        </div>
+        <div class="quest-empty">📋 Ежедневные задания будут доступны позже</div>
     `;
 }
 
@@ -124,7 +122,7 @@ async function loadHabits() {
             const completed = habit.is_completed_today;
             return `
                 <div class="habit-item" data-id="${habit.id}">
-                    <div style="display:flex;align-items:center;gap:12px;">
+                    <div class="habit-info">
                         <input 
                             type="checkbox" 
                             class="habit-checkbox" 
@@ -132,14 +130,14 @@ async function loadHabits() {
                             onchange="toggleHabitHandler(${habit.id})"
                         />
                         <span class="habit-name">${habit.name}</span>
-                        ${habit.description ? `<span style="color:#999;font-size:12px;">${habit.description}</span>` : ''}
+                        ${habit.description ? `<span class="habit-description">${habit.description}</span>` : ''}
                     </div>
-                    <div style="display:flex;align-items:center;gap:10px;">
-                        <span style="font-size:12px;color:#888;">+${habit.gold_reward} 💰</span>
-                        <span style="font-size:12px;color:#888;">+${habit.xp_reward} XP</span>
+                    <div class="habit-rewards">
+                        <span class="habit-reward">+${habit.gold_reward} 💰</span>
+                        <span class="habit-reward">+${habit.xp_reward} XP</span>
                         <button 
                             onclick="deleteHabitHandler(${habit.id})" 
-                            style="background:none;border:none;color:#ff4757;cursor:pointer;font-size:18px;"
+                            class="habit-delete-btn"
                         >
                             ✕
                         </button>
@@ -276,14 +274,11 @@ function animateCharacter(emotion = 'happy', duration = 1500) {
     }
 
     const emotions = {
-        happy: '😊',
         veryHappy: '🤩',
         levelUp: '🥳',
         sad: '😢',
-        cool: '😎',
         default: localStorage.getItem('avatar') || '😊'
     };
-
     avatar.textContent = emotions[emotion] || emotions.default;
     avatar.style.transition = 'transform 0.3s ease';
     avatar.style.transform = 'rotate(-10deg) scale(1.1)';
@@ -311,14 +306,11 @@ function showConfetti() {
     for (let i = 0; i < 20; i++) {
         const el = document.createElement('div');
         el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+        el.className = 'confetti-piece';
         el.style.cssText = `
-            position: fixed;
-            top: -20px;
             left: ${Math.random() * 100}vw;
             font-size: ${Math.random() * 18 + 18}px;
             color: ${colors[Math.floor(Math.random() * colors.length)]};
-            pointer-events: none;
-            z-index: 9999;
             animation: confettiFall ${Math.random() * 2 + 1.5}s linear forwards;
             animation-delay: ${Math.random() * 0.5}s;
             opacity: 0;

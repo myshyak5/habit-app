@@ -10,24 +10,8 @@ function showNotification(message, type = 'info') {
     
     const notification = document.createElement('div');
     notification.className = 'notification-toast';
-    notification.style.cssText = `
-        position: fixed;
-        top: ${80 + notificationQueue.length * 62}px;
-        right: 20px;
-        padding: 14px 24px;
-        background: ${colors[type] || colors.info};
-        color: white;
-        border-radius: 10px;
-        font-weight: 500;
-        z-index: 9999;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.15);
-        max-width: 400px;
-        font-size: 15px;
-        animation: slideIn 0.3s ease;
-        transform: translateX(0);
-        opacity: 1;
-        transition: all 0.3s ease;
-    `;
+    notification.style.top = `${80 + notificationQueue.length * 62}px`;
+    notification.style.background = colors[type] || colors.info;
     notification.textContent = message;
     document.body.appendChild(notification);
     
