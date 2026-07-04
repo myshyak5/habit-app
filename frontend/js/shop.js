@@ -1,5 +1,3 @@
-// frontend/js/shop.js
-
 let SKINS = [];
 let selectedSkin = null;
 let userSkins = [];
@@ -13,7 +11,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     renderShop();
 });
 
-// ✅ ЗАГРУЗКА СКИНОВ С БЭКЕНДА
 async function loadSkinsFromServer() {
     try {
         const response = await apiRequest('/skins/', 'GET');
@@ -23,7 +20,6 @@ async function loadSkinsFromServer() {
             name: skin.name,
             price: skin.price
         }));
-        console.log('📦 Скины загружены с сервера:', SKINS);
     } catch (error) {
         console.error('❌ Ошибка загрузки скинов:', error);
         SKINS = [];
@@ -31,17 +27,13 @@ async function loadSkinsFromServer() {
     }
 }
 
-// ✅ ЗАГРУЗКА СКИНОВ ПОЛЬЗОВАТЕЛЯ
 async function loadUserSkins() {
     try {
         const user = await apiRequest('/user/', 'GET');
         userSkins = user.owned_skins || [];
-        console.log('📦 Скины пользователя:', userSkins);
-        
         const currentAvatar = user.avatar_skin || '😊';
         const currentSkin = SKINS.find(s => s.emoji === currentAvatar);
         selectedSkin = currentSkin ? currentSkin.id : null;
-        console.log('🎨 Выбранный скин:', selectedSkin);
     } catch (error) {
         console.warn('⚠️ Не удалось загрузить скины пользователя:', error);
         userSkins = [];
@@ -105,7 +97,6 @@ function renderShop() {
 }
 
 async function handleShopAction(skinId) {
-    console.log('🛒 handleShopAction вызвана! ID:', skinId);
     const skin = SKINS.find(s => s.id === skinId);
     if (!skin) return;
 

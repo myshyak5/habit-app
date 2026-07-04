@@ -1,17 +1,6 @@
-// frontend/js/profile.js
-
-// Переменная для хранения экземпляра графика
 let activityChart = null;
-
-// Текущий выбранный аватар
 let selectedAvatar = '😊';
-
-// Список скинов (будет загружен с сервера)
 let allSkins = [];
-
-// =============================================
-// 🚀 ЗАГРУЗКА СТРАНИЦЫ
-// =============================================
 
 document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
@@ -23,22 +12,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('profileUsername').textContent = username;
     
     await refreshUserData();
+
     const user = getUserData();
     selectedAvatar = user.avatar || '😊';
-    
-    // ✅ Загружаем скины с сервера
+
     await loadAllSkins();
-    
     updateProfile(user);
     highlightSelectedAvatar(selectedAvatar);
     await loadOwnedSkinsIntoSelector();
     await loadProfileStats();
     await loadChartData();
 });
-
-// =============================================
-// 🎨 ЗАГРУЗКА ВСЕХ СКИНОВ С СЕРВЕРА
-// =============================================
 
 async function loadAllSkins() {
     try {
@@ -49,16 +33,11 @@ async function loadAllSkins() {
             name: skin.name,
             price: skin.price
         }));
-        console.log('📦 Скины загружены с сервера:', allSkins);
     } catch (error) {
         console.error('❌ Ошибка загрузки скинов:', error);
         allSkins = [];
     }
 }
-
-// =============================================
-// 👤 ОБНОВЛЕНИЕ ПРОФИЛЯ
-// =============================================
 
 function updateProfile(user) {
     document.getElementById('profileUsername').textContent = user.username;
@@ -76,10 +55,6 @@ function updateAvatarOnDashboard(emoji) {
     }
 }
 
-// =============================================
-// 🎨 АВАТАР В ПРОФИЛЕ
-// =============================================
-
 function highlightSelectedAvatar(avatar) {
     const options = document.querySelectorAll('.avatar-option');
     options.forEach(option => {
@@ -87,7 +62,6 @@ function highlightSelectedAvatar(avatar) {
     });
 }
 
-// Обработчик клика по стандартным аватарам (уже есть в HTML)
 document.querySelectorAll('.avatar-option:not(.owned-skin)').forEach(option => {
     option.addEventListener('click', function() {
         selectedAvatar = this.dataset.avatar;
@@ -96,34 +70,21 @@ document.querySelectorAll('.avatar-option:not(.owned-skin)').forEach(option => {
     });
 });
 
-// =============================================
-// 🎨 ЗАГРУЗКА КУПЛЕННЫХ СКИНОВ
-// =============================================
-
 async function loadOwnedSkinsIntoSelector() {
     const container = document.getElementById('avatarSelector');
     if (!container) {
         console.warn('⚠️ Контейнер avatarSelector не найден');
         return;
     }
-    
-    // Удаляем старые купленные скины (но не стандартные аватары)
+
     container.querySelectorAll('.owned-skin').forEach(el => el.remove());
     
     try {
         const user = await apiRequest('/user/', 'GET');
         const ownedSkinIds = user.owned_skins || [];
         const currentAvatar = user.avatar_skin || '😊';
-        
-        console.log('📦 Купленные скины пользователя (ID):', ownedSkinIds);
-        console.log('📦 Все доступные скины:', allSkins);
-        
-        // Фильтруем купленные скины
         const ownedSkins = allSkins.filter(skin => ownedSkinIds.includes(skin.id));
         
-        console.log('🎨 Купленные скины для отображения:', ownedSkins);
-        
-        // Добавляем купленные скины в контейнер
         ownedSkins.forEach(skin => {
             const option = document.createElement('div');
             option.className = `avatar-option owned-skin ${skin.emoji === currentAvatar ? 'selected' : ''}`;
@@ -140,18 +101,11 @@ async function loadOwnedSkinsIntoSelector() {
             
             container.appendChild(option);
         });
-        
-        // Обновляем выделение
         highlightSelectedAvatar(currentAvatar);
-        
     } catch (error) {
         console.warn('⚠️ Не удалось загрузить скины с сервера:', error);
     }
 }
-
-// =============================================
-// 💾 СОХРАНЕНИЕ АВАТАРА
-// =============================================
 
 document.getElementById('saveAvatarBtn')?.addEventListener('click', async function() {
     try {
@@ -170,10 +124,6 @@ document.getElementById('saveAvatarBtn')?.addEventListener('click', async functi
     }
 });
 
-// =============================================
-// 🗑️ УДАЛЕНИЕ АККАУНТА
-// =============================================
-
 document.getElementById('deleteAccountBtn')?.addEventListener('click', async function() {
     const confirmDelete = confirm(
         '⚠️ ВНИМАНИЕ! Вы собираетесь удалить свой аккаунт.\n\n' +
@@ -187,7 +137,6 @@ document.getElementById('deleteAccountBtn')?.addEventListener('click', async fun
     );
     
     if (!confirmDelete) return;
-    
     const password = prompt(
         '🔐 Введите ваш пароль для подтверждения удаления аккаунта:'
     );
@@ -209,11 +158,11 @@ document.getElementById('deleteAccountBtn')?.addEventListener('click', async fun
             localStorage.clear();
             setTimeout(() => {
                 window.location.href = 'index.html';
-            }, 1500);
+            }, 1000);
         }
     } catch (error) {
         console.error('Ошибка удаления аккаунта:', error);
-        
+
         if (error.message.includes('пароль') || error.message.includes('password')) {
             showNotification('❌ Неверный пароль. Попробуйте снова.', 'error');
         } else {
@@ -221,10 +170,6 @@ document.getElementById('deleteAccountBtn')?.addEventListener('click', async fun
         }
     }
 });
-
-// =============================================
-// 📊 СТАТИСТИКА
-// =============================================
 
 async function loadProfileStats() {
     try {
@@ -234,10 +179,6 @@ async function loadProfileStats() {
         document.getElementById('profileCompleted').textContent = '0';
     }
 }
-
-// =============================================
-// 📈 ГРАФИК
-// =============================================
 
 async function loadChartData() {
     try {
@@ -299,7 +240,6 @@ function createChart(labels, data) {
 
     try {
         const maxValue = Math.max(...data);
-
         activityChart = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -307,8 +247,8 @@ function createChart(labels, data) {
                 datasets: [{
                     label: 'Выполнено привычек',
                     data: data,
-                    backgroundColor: 'rgba(118, 75, 162, 0.8)',  // фиолетовый
-                    borderColor: 'rgba(118, 75, 162, 1)',        // фиолетовый
+                    backgroundColor: 'rgba(118, 75, 162, 0.8)',
+                    borderColor: 'rgba(118, 75, 162, 1)',
                     borderWidth: 2,
                     borderRadius: {
                         topLeft: 8,

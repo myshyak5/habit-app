@@ -1,9 +1,3 @@
-// frontend/js/dashboard.js
-
-// =============================================
-// 🚀 ЗАГРУЗКА ДАШБОРДА
-// =============================================
-
 document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
     
@@ -13,37 +7,22 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadHabits();
 });
 
-// =============================================
-// 📋 ЕЖЕДНЕВНЫЕ ЗАДАНИЯ
-// =============================================
-
 let dailyQuestsData = [];
 let dailyQuestsCompleted = false;
-let bonusData = null;  // 👈 ДОБАВИТЬ
-
-// =============================================
-// 📥 ЗАГРУЗКА ПРОГРЕССА С БЭКЕНДА
-// =============================================
+let bonusData = null;
 
 async function loadDailyQuests() {
     try {
         const response = await apiRequest('/daily-quests/', 'GET');
-        console.log('📋 Данные с бэкенда:', response);
-        
         dailyQuestsData = response.quests_info || [];
         dailyQuestsCompleted = response.all_completed || false;
-        bonusData = response.bonus || null;  // 👈 ДОБАВИТЬ
-        
+        bonusData = response.bonus || null;
         renderDailyQuests();
     } catch (error) {
         console.warn('Ежедневные задания недоступны:', error);
         renderDailyQuestsEmpty();
     }
 }
-
-// =============================================
-// 🎨 ОТРИСОВКА ЕЖЕДНЕВНЫХ ЗАДАНИЙ
-// =============================================
 
 function renderDailyQuests() {
     const container = document.getElementById('dailyQuestsList');
@@ -80,7 +59,6 @@ function renderDailyQuests() {
         `;
     }).join('');
 
-    // 👇 БОНУС ЗА ВСЕ ЗАДАНИЯ (данные с бэкенда)
     if (allCompleted && dailyQuestsData.length > 0) {
         const bonusGold = bonusData?.gold || 25;
         const bonusXp = bonusData?.xp || 50;
@@ -109,10 +87,6 @@ function renderDailyQuestsEmpty() {
     `;
 }
 
-// =============================================
-// 🔥 ПРОВЕРКА ПОВЫШЕНИЯ УРОВНЯ
-// =============================================
-
 function checkLevelUp(oldLevel, newLevel) {
     if (newLevel > oldLevel) {
         animateCharacter('levelUp', 2500);
@@ -129,10 +103,6 @@ function checkLevelUp(oldLevel, newLevel) {
         }
     }
 }
-
-// =============================================
-// 📋 ЗАГРУЗКА ПРИВЫЧЕК
-// =============================================
 
 async function loadHabits() {
     const habitsList = document.getElementById('habitsList');
@@ -152,9 +122,6 @@ async function loadHabits() {
 
         habitsList.innerHTML = habits.map(habit => {
             const completed = habit.is_completed_today;
-            const xpReward = habit.xp_reward || 10;
-            const goldReward = Math.floor(xpReward / 2);
-            
             return `
                 <div class="habit-item" data-id="${habit.id}">
                     <div style="display:flex;align-items:center;gap:12px;">
@@ -168,8 +135,8 @@ async function loadHabits() {
                         ${habit.description ? `<span style="color:#999;font-size:12px;">${habit.description}</span>` : ''}
                     </div>
                     <div style="display:flex;align-items:center;gap:10px;">
-                        <span style="font-size:12px;color:#888;">+${goldReward} 💰</span>
-                        <span style="font-size:12px;color:#888;">+${xpReward} XP</span>
+                        <span style="font-size:12px;color:#888;">+${habit.gold_reward} 💰</span>
+                        <span style="font-size:12px;color:#888;">+${habit.xp_reward} XP</span>
                         <button 
                             onclick="deleteHabitHandler(${habit.id})" 
                             style="background:none;border:none;color:#ff4757;cursor:pointer;font-size:18px;"
@@ -185,10 +152,6 @@ async function loadHabits() {
         showNotification('Ошибка загрузки привычек: ' + error.message, 'error');
     }
 }
-
-// =============================================
-// 📊 ОБНОВЛЕНИЕ ИНФОРМАЦИИ О ПОЛЬЗОВАТЕЛЕ
-// =============================================
 
 function updateUserInfo() {
     const user = getUserData();
@@ -233,10 +196,6 @@ function updateUserInfo() {
     localStorage.setItem('oldLevel', user.level);
 }
 
-// =============================================
-// 📦 ПОЛУЧЕНИЕ ДАННЫХ ИЗ LOCALSTORAGE
-// =============================================
-
 function getUserData() {
     return {
         username: localStorage.getItem('username') || 'Пользователь',
@@ -251,12 +210,7 @@ function getUserData() {
     };
 }
 
-// =============================================
-// 🎯 ОБРАБОТЧИКИ ПРИВЫЧЕК
-// =============================================
-
 async function toggleHabitHandler(habitId) {
-    console.log('🔄 toggleHabitHandler ВЫЗВАН!', new Date().getTime());
     try {
         const habits = await getHabits();
         const habit = habits.find(h => h.id === habitId);
@@ -267,7 +221,6 @@ async function toggleHabitHandler(habitId) {
 
         const today = new Date().toISOString().split('T')[0];
         let completed_dates = habit.completed_dates || [];
-
         const isCurrentlyCompleted = completed_dates.includes(today);
         
         if (isCurrentlyCompleted) {
@@ -277,7 +230,6 @@ async function toggleHabitHandler(habitId) {
         }
 
         await toggleHabit(habitId, completed_dates);
-        
         await refreshUserData();
         await loadHabits();
         updateUserInfo();
@@ -285,9 +237,7 @@ async function toggleHabitHandler(habitId) {
         
         if (!isCurrentlyCompleted) {
             animateCharacter('veryHappy', 1500);
-            const xpReward = habit.xp_reward || 10;
-            const goldReward = Math.floor(xpReward / 2);
-            showNotification(`✅ Привычка выполнена! +${xpReward} XP, +${goldReward} 💰`, 'success');
+            showNotification(`✅ Привычка выполнена! +${habit.xp_reward} XP, +${habit.gold_reward} 💰`, 'success');
         } else {
             animateCharacter('sad', 1500);
             showNotification('⏳ Привычка отменена', 'info');
@@ -304,26 +254,18 @@ async function deleteHabitHandler(habitId) {
 
     try {
         await deleteHabit(habitId);
-        
         await refreshUserData();
         await loadHabits();
         updateUserInfo();
         await loadDailyQuests();
-        
         showNotification('✅ Привычка удалена!', 'success');
-        
     } catch (error) {
         console.error('Ошибка удаления:', error);
         showNotification('❌ Ошибка: ' + error.message, 'error');
     }
 }
 
-// =============================================
-// 🔥 АНИМАЦИИ
-// =============================================
-
 let animationTimer = null;
-
 function animateCharacter(emotion = 'happy', duration = 1500) {
     const avatar = document.getElementById('characterAvatar');
     if (!avatar) return;
@@ -343,14 +285,11 @@ function animateCharacter(emotion = 'happy', duration = 1500) {
     };
 
     avatar.textContent = emotions[emotion] || emotions.default;
-    
     avatar.style.transition = 'transform 0.3s ease';
     avatar.style.transform = 'rotate(-10deg) scale(1.1)';
-    
     setTimeout(() => {
         avatar.style.transform = 'rotate(10deg) scale(1.1)';
     }, 200);
-    
     setTimeout(() => {
         avatar.style.transform = 'rotate(0deg) scale(1)';
     }, 500);
@@ -389,10 +328,6 @@ function showConfetti() {
     }
 }
 
-// =============================================
-// 🪟 МОДАЛЬНОЕ ОКНО
-// =============================================
-
 let selectedDifficultyXp = 20;
 
 function selectDifficulty(level, xp, btn) {
@@ -420,13 +355,12 @@ function closeHabitModal() {
 
 document.getElementById('addHabitForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
-    
     const name = document.getElementById('habitName').value.trim();
+
     if (!name) {
         showNotification('❌ Введите название привычки', 'error');
         return;
     }
-    
     const description = document.getElementById('habitDescription').value.trim();
     const xpReward = parseInt(document.getElementById('habitXp').value) || 20;
     
