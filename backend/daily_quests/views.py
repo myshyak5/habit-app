@@ -68,7 +68,7 @@ def recalculate_quest_progress(user):
     
     quest, created = DailyQuest.objects.get_or_create(user=user, date=today)
     
-    habits = Habit.objects.filter(user=user, is_active=True)
+    habits = Habit.objects.filter(user=user, is_active=True).only('id', 'completed_dates', 'xp_reward')
     completed_habits = [h for h in habits if today_str in (h.completed_dates or [])]
     
     quest.quest_1_progress = len(completed_habits)
