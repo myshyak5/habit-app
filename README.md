@@ -5,9 +5,9 @@
 ## Стек
 
 **Бэкенд:** Python + Django  
-**Фронтенд:** HTML, CSS, JavaScript  
+**Фронтенд:** HTML, CSS, JS  
 **БД:** SQLite  
-**Графики:** Chart.js 
+**График:** Chart.js 
 
 ## Что сделано
 
