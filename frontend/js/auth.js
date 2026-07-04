@@ -16,7 +16,7 @@ async function registerUser(username, password, password2, email = '') {
         localStorage.setItem('avatar', data.avatar_skin || '😊');
         return data;
     } catch (error) {
-        showNotification('❌ ' + handleApiError(error, 'Ошибка регистрации'), 'error');
+        console.error('Ошибка регистрации:', error);
         throw error;
     }
 }
@@ -36,7 +36,7 @@ async function loginUser(username, password) {
         localStorage.setItem('avatar', data.avatar_skin || '😊');
         return data;
     } catch (error) {
-        showNotification('❌ ' + handleApiError(error, 'Ошибка входа'), 'error');
+        console.error('Ошибка входа:', error);
         throw error;
     }
 }
