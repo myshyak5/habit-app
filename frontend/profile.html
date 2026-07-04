@@ -2,288 +2,15 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8" />
-   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Профиль - Habit RPG</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Профиль - Habit Game</title>
     <link rel="stylesheet" href="css/style.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        /* Стили для профиля */
-        .profile-container {
-            width: 100%;
-            max-width: 700px;
-            padding: 20px;
-        }
-
-        .profile-box {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-
-        .profile-header {
-            display: flex;
-            align-items: center;
-            padding-left: 5%;
-            gap: 25px;
-            margin-bottom: 25px;
-        }
-
-        .profile-avatar {
-            font-size: 60px;
-            background: #f8f9fa;
-            width: 120px;
-            height: 120px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            border: 4px solid #667eea;
-            overflow: hidden;
-            padding: 0;
-            margin: 0;
-            line-height: 1;
-            flex-shrink: 0;
-        }
-
-        .profile-name {
-            font-size: 28px;
-            margin-bottom: 5px;
-        }
-
-        .profile-level-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 15px;
-            font-size: 14px;
-            font-weight: 600;
-            display: inline-block;
-            line-height: 1;
-            vertical-align: middle;
-        }
-
-        .profile-stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin: 25px 0;
-        }
-
-        .stat-card {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 12px;
-            text-align: center;
-            transition: background 0.2s;
-        }
-
-        .stat-card:hover {
-            background: #f0f0f0;
-        }
-
-        .stat-card .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: #333;
-        }
-
-        .stat-card .stat-label {
-            font-size: 14px;
-            color: #888;
-            margin-top: 5px;
-        }
-
-        .stat-card .stat-icon {
-            font-size: 24px;
-        }
-
-        .chart-container {
-            margin: 25px 0;
-        }
-
-        .chart-container h3 {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .chart-container canvas {
-            max-width: 100%;
-            max-height: 250px;
-        }
-
-        .avatar-selector {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, 70px);
-            gap: 15px;
-            margin: 15px auto;
-            justify-content: center;
-            max-width: 100%;
-        }
-
-        .avatar-option {
-            font-size: 40px;
-            padding: 0;
-            border: 3px solid #ddd;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: white;
-            width: 70px;
-            height: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-        }
-
-        .avatar-option:hover {
-            border-color: #667eea;
-            transform: scale(1.1);
-        }
-
-        .avatar-option.selected {
-            border-color: #667eea;
-            background: #f0f3ff;
-            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
-        }
-
-        /* ===== РАЗДЕЛИТЕЛЬ ===== */
-        hr {
-            margin: 25px 0;
-            border: none;
-            border-top: 2px solid #f0f0f0;
-        }
-
-        /* ===== КНОПКИ ===== */
-        .profile-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 25px;
-            flex-wrap: wrap;
-        }
-
-        .btn-profile {
-            flex: 1;
-            min-width: 120px;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 15px;
-            text-align: center;
-            text-decoration: none;
-            transition: all 0.25s ease;
-            display: inline-block;
-            white-space: nowrap;
-        }
-
-        .btn-profile:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .btn-profile:active {
-            transform: translateY(0px);
-            box-shadow: none;
-        }
-
-        .btn-back {
-            background: #f0f0f0;
-            color: #333;
-        }
-
-        .btn-back:hover {
-            background: #e0e0e0;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn-save {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-save:hover {
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        /* ===== ОПАСНАЯ ЗОНА ===== */
-        .danger-zone {
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 2px solid #f0f0f0;
-        }
-
-        .danger-zone p {
-            font-size: 12px;
-            color: #999;
-            margin-top: 8px;
-            text-align: center;
-        }
-
-        .btn-danger {
-            width: 100%;
-            padding: 12px 20px;
-            background: #ff4757;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 15px;
-            transition: all 0.25s ease;
-        }
-
-        .btn-danger:hover {
-            background: #ff6b81;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4);
-        }
-
-        .btn-danger:active {
-            transform: translateY(0px);
-        }
-
-        @media (max-width: 600px) {
-            .profile-header {
-                flex-direction: column;
-                text-align: center;
-            }
-            .profile-stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            .avatar-selector {
-                justify-content: center;
-            }
-            .profile-actions {
-                flex-direction: column;
-            }
-            .btn-profile {
-                min-width: 100%;
-            }
-        }
-    </style>
 </head>
 <body>
-    <header class="header">
-        <div class="header-content">
-            <div class="logo">🎮 Habit RPG</div>
-            <nav class="nav-links">
-                <a href="dashboard.html">📊 Дашборд</a>
-                <a href="profile.html" class="active">👤 Профиль</a>
-                <a href="shop.html">🛒 Магазин</a>
-            </nav>
-            <button onclick="logoutUser()" class="btn-logout">Выйти</button>
-        </div>
-    </header>
-
+    <div id="navbar"></div>
     <div class="profile-container">
         <div class="profile-box">
-            <!-- Шапка профиля -->
             <div class="profile-header">
                 <div class="profile-avatar" id="profileAvatar">😊</div>
                 <div>
@@ -291,8 +18,6 @@
                     <span class="profile-level-badge">🏆 Уровень <span id="profileLevel">1</span></span>
                 </div>
             </div>
-
-            <!-- Статистика -->
             <div class="profile-stats">
                 <div class="stat-card">
                     <div class="stat-icon">⭐</div>
@@ -310,16 +35,10 @@
                     <div class="stat-label">Выполнено привычек</div>
                 </div>
             </div>
-
-            <!-- График активности -->
             <div class="chart-container">
                 <h3>📈 Активность за неделю</h3>
-                <div style="background:#f8f9fa; border-radius:12px; padding:20px;">
-                    <canvas id="activityChart"></canvas>
-                </div>
+                <div><canvas id="activityChart"></canvas></div>
             </div>
-
-            <!-- Смена аватара -->
             <hr />
             <h3 style="margin-bottom:15px;">🎨 Выберите аватар</h3>
             <div class="avatar-selector" id="avatarSelector">
@@ -329,24 +48,19 @@
                 <div class="avatar-option" data-avatar="🐉">🐉</div>
                 <div class="avatar-option" data-avatar="🚀">🚀</div>
             </div>
-
-            <!-- Кнопки -->
             <div class="profile-actions">
                 <a href="dashboard.html" class="btn-profile btn-back">← Назад к привычкам</a>
                 <button class="btn-profile btn-save" id="saveAvatarBtn">💾 Сохранить аватар</button>
             </div>
-
-            <!-- Опасная зона -->
             <div class="danger-zone">
                 <button class="btn-danger" id="deleteAccountBtn">🗑️ Удалить аккаунт</button>
                 <p>⚠️ Это действие необратимо. Все данные будут удалены.</p>
             </div>
         </div>
     </div>
-
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
-    <script src="js/utils.js"></script>
+    <script src="js/navbar.js"></script>
     <script src="js/notifications.js"></script>
     <script src="js/habits.js"></script>
     <script src="js/profile.js"></script>

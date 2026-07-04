@@ -1,6 +1,3 @@
-// frontend/js/auth.js
-
-// Регистрация
 async function registerUser(username, password, password2, email = '') {
     const data = await apiRequest('/register/', 'POST', {
         username: username,
@@ -21,7 +18,6 @@ async function registerUser(username, password, password2, email = '') {
     return data;
 }
 
-// Вход
 async function loginUser(username, password) {
     const data = await apiRequest('/login/', 'POST', {
         username: username,
@@ -39,7 +35,6 @@ async function loginUser(username, password) {
     return data;
 }
 
-// Выход
 function logoutUser() {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
@@ -47,11 +42,10 @@ function logoutUser() {
     localStorage.removeItem('level');
     localStorage.removeItem('experience');
     localStorage.removeItem('gold');
-    localStorage.removeItem('avatar');  // 🔥 ДОБАВЛЯЕМ УДАЛЕНИЕ АВАТАРА
+    localStorage.removeItem('avatar');
     window.location.href = 'login.html';
 }
 
-// Проверка авторизации
 function checkAuth() {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -78,7 +72,6 @@ function getUserData() {
 async function refreshUserData() {
     try {
         const userData = await apiRequest('/user/', 'GET');
-        console.log('📥 Данные с сервера:', userData);
         localStorage.setItem('avatar', userData.avatar_skin || '😊');
         localStorage.setItem('level', userData.level);
         localStorage.setItem('experience', userData.experience);

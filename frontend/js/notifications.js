@@ -1,5 +1,3 @@
-// frontend/js/notifications.js
-
 let notificationQueue = [];
 
 function showNotification(message, type = 'info') {

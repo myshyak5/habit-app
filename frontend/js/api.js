@@ -1,4 +1,3 @@
-// frontend/js/api.js
 const API_URL = 'http://127.0.0.1:8000/api';
 
 function getToken() {
@@ -10,12 +9,10 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
     const headers = {
         'Content-Type': 'application/json',
     };
-
     const token = getToken();
     if (token) {
         headers['Authorization'] = `Token ${token}`;
     }
-
     const options = {
         method: method,
         headers: headers,
@@ -27,34 +24,25 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
 
     try {
         const response = await fetch(url, options);
-
-        // =============================================
-        // 🔥 ЕДИНСТВЕННОЕ ПРАВИЛЬНОЕ РЕШЕНИЕ
-        // =============================================
-        // Пытаемся прочитать тело ответа как текст
         const text = await response.text();
         
-        // Если тело пустое — возвращаем успех
         if (!text || text.trim() === '') {
             if (response.ok) {
                 return { success: true };
             }
             throw new Error('Сервер вернул пустой ответ с ошибкой');
         }
-
-        // Если тело не пустое — парсим JSON
         let result;
+
         try {
             result = JSON.parse(text);
         } catch (jsonError) {
-            // Если текст не является JSON, но ответ успешный
             if (response.ok) {
                 return { success: true, raw: text };
             }
             throw new Error('Сервер вернул некорректный ответ: ' + text.substring(0, 100));
         }
 
-        // Обработка ошибок (4xx, 5xx)
         if (!response.ok) {
             let errorMessage = 'Ошибка запроса';
             if (result.detail) errorMessage = result.detail;
