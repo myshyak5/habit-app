@@ -6,25 +6,56 @@ let activityChart = null;
 // Текущий выбранный аватар
 let selectedAvatar = '😊';
 
+// Список скинов (будет загружен с сервера)
+let allSkins = [];
+
 // =============================================
 // 🚀 ЗАГРУЗКА СТРАНИЦЫ
 // =============================================
 
 document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
+    
     const avatar = localStorage.getItem('avatar') || '😊';
     const username = localStorage.getItem('username') || 'Пользователь';
+    
     document.getElementById('profileAvatar').textContent = avatar;
     document.getElementById('profileUsername').textContent = username;
+    
     await refreshUserData();
     const user = getUserData();
     selectedAvatar = user.avatar || '😊';
+    
+    // ✅ Загружаем скины с сервера
+    await loadAllSkins();
+    
     updateProfile(user);
     highlightSelectedAvatar(selectedAvatar);
     await loadOwnedSkinsIntoSelector();
     await loadProfileStats();
     await loadChartData();
 });
+
+// =============================================
+// 🎨 ЗАГРУЗКА ВСЕХ СКИНОВ С СЕРВЕРА
+// =============================================
+
+async function loadAllSkins() {
+    try {
+        const response = await apiRequest('/skins/', 'GET');
+        allSkins = response.map(skin => ({
+            id: skin.id,
+            emoji: skin.emoji,
+            name: skin.name,
+            price: skin.price
+        }));
+        console.log('📦 Скины загружены с сервера:', allSkins);
+    } catch (error) {
+        console.error('❌ Ошибка загрузки скинов:', error);
+        allSkins = [];
+    }
+}
+
 // =============================================
 // 👤 ОБНОВЛЕНИЕ ПРОФИЛЯ
 // =============================================
@@ -56,7 +87,7 @@ function highlightSelectedAvatar(avatar) {
     });
 }
 
-// Обработчик клика по стандартным аватарам
+// Обработчик клика по стандартным аватарам (уже есть в HTML)
 document.querySelectorAll('.avatar-option:not(.owned-skin)').forEach(option => {
     option.addEventListener('click', function() {
         selectedAvatar = this.dataset.avatar;
@@ -70,23 +101,36 @@ document.querySelectorAll('.avatar-option:not(.owned-skin)').forEach(option => {
 // =============================================
 
 async function loadOwnedSkinsIntoSelector() {
-    const container = document.getElementById('avatarSelector');  // ← НУЖНО ОБЪЯВИТЬ!
-    if (!container) return;
+    const container = document.getElementById('avatarSelector');
+    if (!container) {
+        console.warn('⚠️ Контейнер avatarSelector не найден');
+        return;
+    }
+    
+    // Удаляем старые купленные скины (но не стандартные аватары)
     container.querySelectorAll('.owned-skin').forEach(el => el.remove());
+    
     try {
         const user = await apiRequest('/user/', 'GET');
         const ownedSkinIds = user.owned_skins || [];
-        const currentAvatar = user.avatar_skin || '😊';  // ← НУЖНО ОБЪЯВИТЬ!
-
-        const skins = window.SKINS || [];
-        const ownedSkins = skins.filter(skin => ownedSkinIds.includes(skin.id));
-
+        const currentAvatar = user.avatar_skin || '😊';
+        
+        console.log('📦 Купленные скины пользователя (ID):', ownedSkinIds);
+        console.log('📦 Все доступные скины:', allSkins);
+        
+        // Фильтруем купленные скины
+        const ownedSkins = allSkins.filter(skin => ownedSkinIds.includes(skin.id));
+        
+        console.log('🎨 Купленные скины для отображения:', ownedSkins);
+        
+        // Добавляем купленные скины в контейнер
         ownedSkins.forEach(skin => {
             const option = document.createElement('div');
             option.className = `avatar-option owned-skin ${skin.emoji === currentAvatar ? 'selected' : ''}`;
             option.dataset.avatar = skin.emoji;
+            option.dataset.skinId = skin.id;
             option.textContent = skin.emoji;
-            option.title = skin.name;
+            option.title = `${skin.name} (куплен)`;
             
             option.addEventListener('click', function() {
                 selectedAvatar = this.dataset.avatar;
@@ -96,13 +140,17 @@ async function loadOwnedSkinsIntoSelector() {
             
             container.appendChild(option);
         });
+        
+        // Обновляем выделение
+        highlightSelectedAvatar(currentAvatar);
+        
     } catch (error) {
-        console.warn('Не удалось загрузить скины с сервера:', error);
+        console.warn('⚠️ Не удалось загрузить скины с сервера:', error);
     }
 }
 
 // =============================================
-// 💾 СОХРАНЕНИЕ АВАТАРА (ОДНА КНОПКА ДЛЯ ВСЕХ)
+// 💾 СОХРАНЕНИЕ АВАТАРА
 // =============================================
 
 document.getElementById('saveAvatarBtn')?.addEventListener('click', async function() {
@@ -117,11 +165,16 @@ document.getElementById('saveAvatarBtn')?.addEventListener('click', async functi
         await loadOwnedSkinsIntoSelector();
         showNotification('✅ Аватар сохранён!', 'success');
     } catch (error) {
+        console.error('Ошибка сохранения аватара:', error);
         showNotification('❌ Ошибка сохранения аватара', 'error');
     }
 });
+
+// =============================================
+// 🗑️ УДАЛЕНИЕ АККАУНТА
+// =============================================
+
 document.getElementById('deleteAccountBtn')?.addEventListener('click', async function() {
-    // Первое подтверждение
     const confirmDelete = confirm(
         '⚠️ ВНИМАНИЕ! Вы собираетесь удалить свой аккаунт.\n\n' +
         'Это действие НЕОБРАТИМО.\n' +
@@ -135,30 +188,25 @@ document.getElementById('deleteAccountBtn')?.addEventListener('click', async fun
     
     if (!confirmDelete) return;
     
-    // Второе подтверждение (ввод пароля)
     const password = prompt(
         '🔐 Введите ваш пароль для подтверждения удаления аккаунта:'
     );
     
-    if (password === null) return;  // Нажал "Отмена"
+    if (password === null) return;
     
     if (!password || password.trim() === '') {
         showNotification('❌ Пароль не может быть пустым', 'error');
         return;
     }
+    
     try {
-        // Отправляем запрос на удаление
         const response = await apiRequest('/user/delete/', 'POST', {
             password: password
         });
         
         if (response.status === 'success') {
             showNotification('✅ Аккаунт успешно удалён', 'success');
-            
-            // Очищаем localStorage
             localStorage.clear();
-            
-            // Перенаправляем на главную
             setTimeout(() => {
                 window.location.href = 'index.html';
             }, 1500);
@@ -173,9 +221,11 @@ document.getElementById('deleteAccountBtn')?.addEventListener('click', async fun
         }
     }
 });
+
 // =============================================
 // 📊 СТАТИСТИКА
 // =============================================
+
 async function loadProfileStats() {
     try {
         const user = getUserData();
@@ -320,4 +370,54 @@ function createChart(labels, data) {
     } catch (error) {
         console.error('Ошибка создания графика:', error);
     }
+}
+
+// =============================================
+// 🔔 УВЕДОМЛЕНИЯ
+// =============================================
+
+function showNotification(message, type = 'info') {
+    const colors = {
+        success: '#2ecc71',
+        error: '#e74c3c',
+        info: '#3498db',
+        warning: '#f39c12'
+    };
+    
+    // Удаляем старые уведомления
+    document.querySelectorAll('.notification-toast').forEach(el => el.remove());
+    
+    const notification = document.createElement('div');
+    notification.className = 'notification-toast';
+    notification.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        padding: 15px 25px;
+        background: ${colors[type] || colors.info};
+        color: white;
+        border-radius: 10px;
+        font-weight: 600;
+        z-index: 9999;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        max-width: 400px;
+        font-size: 14px;
+        transform: translateX(120%);
+        opacity: 0;
+        transition: transform 0.4s ease, opacity 0.4s ease;
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Анимация появления
+    void notification.offsetHeight;
+    notification.style.transform = 'translateX(0)';
+    notification.style.opacity = '1';
+    
+    // Автоматическое скрытие
+    setTimeout(() => {
+        notification.style.transform = 'translateX(120%)';
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 400);
+    }, 3000);
 }
