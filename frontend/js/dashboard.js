@@ -7,9 +7,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadHabits();
 });
 
+let animationTimer = null;
 let dailyQuestsData = [];
 let dailyQuestsCompleted = false;
 let bonusData = null;
+let habitsCache = null;
 
 async function loadDailyQuests() {
     try {
@@ -85,12 +87,16 @@ function renderDailyQuestsEmpty() {
     `;
 }
 
-function checkLevelUp(oldLevel, newLevel) {
+function checkLevelUp(oldLevel, newLevel, goldReward = 0) {
     if (newLevel > oldLevel) {
         animateCharacter('levelUp', 2500);
         setTimeout(() => showConfetti(), 300);
         setTimeout(() => showConfetti(), 700);
-        showNotification(`🎉 УРОВЕНЬ ПОВЫШЕН! Теперь вы ${newLevel} уровень!`, 'success');
+        let message = `🎉 Уровень повышен до ${newLevel}!`;
+        if (goldReward > 0) {
+            message += ` +${goldReward} 💰`;
+        }
+        showNotification(message, 'success');
         const avatar = document.getElementById('characterAvatar');
         if (avatar) {
             avatar.style.transform = 'scale(1.5)';
@@ -106,7 +112,13 @@ async function loadHabits() {
     const habitsList = document.getElementById('habitsList');
 
     try {
-        const habits = await getHabits();
+        let habits;
+        if (habitsCache) {
+            habits = habitsCache;
+        } else {
+            habits = await getHabits();
+            habitsCache = habits;
+        }
 
         if (!habits || habits.length === 0) {
             habitsList.innerHTML = `
@@ -175,22 +187,19 @@ function updateUserInfo() {
     }
     
     const tooltipCurrent = document.getElementById('tooltipCurrentXP');
-    const tooltipTotal = document.getElementById('tooltipTotalXP');
     if (tooltipCurrent) {
         tooltipCurrent.textContent = Math.round(xpOnLevel);
     }
+    const tooltipTotal = document.getElementById('tooltipTotalXP');
     if (tooltipTotal) {
         tooltipTotal.textContent = xpForNextLevel;
     }
-    
     const progressText = document.getElementById('xpProgressText');
     if (progressText) {
         progressText.textContent = `До уровня ${user.level + 1} осталось ${Math.round(xpRemaining)} XP`;
     }
     
     document.getElementById('characterAvatar').textContent = user.avatar || '😊';
-    
-    checkLevelUp(oldLevel, user.level);
     localStorage.setItem('oldLevel', user.level);
 }
 
@@ -227,22 +236,34 @@ async function toggleHabitHandler(habitId) {
             completed_dates.push(today);
         }
 
-        await toggleHabit(habitId, completed_dates);
-        await refreshUserData();
-        await loadHabits();
+        const response = await toggleHabit(habitId, completed_dates);
+        const checkbox = document.querySelector(`.habit-item[data-id="${habitId}"] .habit-checkbox`);
+        if (checkbox) {
+            checkbox.checked = !isCurrentlyCompleted;
+        }
+        habitsCache = null;
+        await updateUserResources();
         updateUserInfo();
         await loadDailyQuests();
+
+        if (response.level_up && response.level_up.new_level > response.level_up.old_level) {
+            checkLevelUp(
+                response.level_up.old_level,
+                response.level_up.new_level,
+                response.level_up.gold_reward,
+                response.level_up.xp_reward
+            );
+        }
         
         if (!isCurrentlyCompleted) {
-            animateCharacter('veryHappy', 1500);
+            animateCharacter('veryHappy', 800);
             showNotification(`✅ Привычка выполнена! +${habit.xp_reward} XP, +${habit.gold_reward} 💰`, 'success');
         } else {
-            animateCharacter('sad', 1500);
+            animateCharacter('sad', 800);
             showNotification('⏳ Привычка отменена', 'info');
         }
     } catch (error) {
-        console.error('Ошибка отметки привычки:', error);
-        showNotification('❌ Ошибка: ' + error.message, 'error');
+        showNotification('❌ ' + handleApiError(error, 'Ошибка при отметке привычки'), 'error');
         await loadHabits();
     }
 }
@@ -252,19 +273,17 @@ async function deleteHabitHandler(habitId) {
 
     try {
         await deleteHabit(habitId);
-        await refreshUserData();
-        await loadHabits();
+        habitsCache = null;
+        await updateUserResources();
         updateUserInfo();
         await loadDailyQuests();
         showNotification('✅ Привычка удалена!', 'success');
     } catch (error) {
-        console.error('Ошибка удаления:', error);
-        showNotification('❌ Ошибка: ' + error.message, 'error');
+        showNotification('❌ ' + handleApiError(error, 'Ошибка при удалении привычки'), 'error');
     }
 }
 
-let animationTimer = null;
-function animateCharacter(emotion = 'happy', duration = 1500) {
+function animateCharacter(emotion = 'happy', duration = 800) {
     const avatar = document.getElementById('characterAvatar');
     if (!avatar) return;
 
@@ -305,16 +324,14 @@ function showConfetti() {
     
     for (let i = 0; i < 20; i++) {
         const el = document.createElement('div');
-        el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
         el.className = 'confetti-piece';
-        el.style.cssText = `
-            left: ${Math.random() * 100}vw;
-            font-size: ${Math.random() * 18 + 18}px;
-            color: ${colors[Math.floor(Math.random() * colors.length)]};
-            animation: confettiFall ${Math.random() * 2 + 1.5}s linear forwards;
-            animation-delay: ${Math.random() * 0.5}s;
-            opacity: 0;
-        `;
+        el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.fontSize = Math.random() * 18 + 18 + 'px';
+        el.style.color = colors[Math.floor(Math.random() * colors.length)];
+        el.style.animation = `confettiFall ${Math.random() * 2 + 1.5}s linear forwards`;
+        el.style.animationDelay = Math.random() * 0.5 + 's';
+        el.style.opacity = '0';
         document.body.appendChild(el);
         setTimeout(() => el.remove(), 3500);
     }
@@ -358,6 +375,7 @@ document.getElementById('addHabitForm')?.addEventListener('submit', async functi
     
     try {
         await createHabit(name, description, xpReward);
+        habitsCache = null;
         await loadHabits();
         closeHabitModal();
         showNotification(`✅ Привычка "${name}" создана!`, 'success');

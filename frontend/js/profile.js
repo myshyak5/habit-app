@@ -34,8 +34,7 @@ async function loadAllSkins() {
             price: skin.price
         }));
     } catch (error) {
-        console.error('❌ Ошибка загрузки скинов:', error);
-        allSkins = [];
+        showNotification('❌ ' + handleApiError(error, 'Не удалось загрузить скины'), 'error');
     }
 }
 
@@ -103,7 +102,7 @@ async function loadOwnedSkinsIntoSelector() {
         });
         highlightSelectedAvatar(currentAvatar);
     } catch (error) {
-        console.warn('⚠️ Не удалось загрузить скины с сервера:', error);
+        showNotification('❌ ' + handleApiError(error, 'Не удалось загрузить купленные скины'), 'error');
     }
 }
 

@@ -6,7 +6,7 @@ from .models import Habit
 from .serializers import HabitSerializer
 from django.apps import apps
 from datetime import date
-
+from daily_quests.views import recalculate_quest_progress
 
 class HabitViewSet(viewsets.ModelViewSet):
     serializer_class = HabitSerializer
@@ -20,7 +20,6 @@ class HabitViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
     def update(self, request, *args, **kwargs):
-        """Обновление привычки (включая отметку выполнения)"""
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         
@@ -33,6 +32,7 @@ class HabitViewSet(viewsets.ModelViewSet):
         new_dates = set(updated_instance.completed_dates or [])
         today = date.today().isoformat()
         user = request.user
+        old_level = user.level
         
         if today in new_dates and today not in old_dates:
             xp = updated_instance.xp_reward
@@ -50,12 +50,10 @@ class HabitViewSet(viewsets.ModelViewSet):
             user.total_completed = max(0, user.total_completed - 1)
             user.save()
         
-        # 🔥 ПЕРЕСЧИТЫВАЕМ КВЕСТЫ
         try:
-            from daily_quests.views import recalculate_quest_progress
             recalculate_quest_progress(user)
         except Exception as e:
-            print(f"⚠️ Ошибка пересчёта заданий: {e}")
+            print(f"Ошибка пересчёта заданий: {e}")
         
         response_data = serializer.data
         response_data.update({
@@ -63,13 +61,17 @@ class HabitViewSet(viewsets.ModelViewSet):
             'experience': user.experience,
             'level': user.level,
             'total_completed': user.total_completed,
-            'is_completed_today': today in new_dates
+            'is_completed_today': today in new_dates,
+            'level_up': {
+                'old_level': old_level,
+                'new_level': user.level,
+                'gold_reward': (user.level - old_level) * 10 if user.level > old_level else 0,
+            }
         })
         
         return Response(response_data)
 
     def destroy(self, request, *args, **kwargs):
-        """Удаление привычки (мягкое удаление) — убирает ТОЛЬКО за сегодня"""
         instance = self.get_object()
         user = request.user
         today = date.today()
@@ -88,13 +90,11 @@ class HabitViewSet(viewsets.ModelViewSet):
         instance.is_active = False
         instance.save()
         
-        # 🔥 ПЕРЕСЧИТЫВАЕМ КВЕСТЫ
         if is_completed_today:
             try:
-                from daily_quests.views import recalculate_quest_progress
                 recalculate_quest_progress(user)
             except Exception as e:
-                print(f"⚠️ Ошибка пересчёта заданий: {e}")
+                print(f"Ошибка пересчёта заданий: {e}")
         
         return Response(
             {

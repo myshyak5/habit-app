@@ -1,38 +1,44 @@
 async function registerUser(username, password, password2, email = '') {
-    const data = await apiRequest('/register/', 'POST', {
-        username: username,
-        password: password,
-        password2: password2,
-        email: email,
-    });
-    localStorage.clear();
-
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('username', data.username);
-    localStorage.setItem('user_id', data.user_id);
-    localStorage.setItem('level', data.level || 1);
-    localStorage.setItem('experience', data.experience || 0);
-    localStorage.setItem('gold', data.gold || 0);
-    localStorage.setItem('avatar', data.avatar_skin || '😊');
-
-    return data;
+    try {
+        const data = await apiRequest('/register/', 'POST', {
+            username: username,
+            password: password,
+            password2: password2,
+            email: email,
+        });
+        localStorage.clear();
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('username', data.username);
+        localStorage.setItem('user_id', data.user_id);
+        localStorage.setItem('level', data.level || 1);
+        localStorage.setItem('experience', data.experience || 0);
+        localStorage.setItem('gold', data.gold || 0);
+        localStorage.setItem('avatar', data.avatar_skin || '😊');
+        return data;
+    } catch (error) {
+        showNotification('❌ ' + handleApiError(error, 'Ошибка регистрации'), 'error');
+        throw error;
+    }
 }
 
 async function loginUser(username, password) {
-    const data = await apiRequest('/login/', 'POST', {
-        username: username,
-        password: password,
-    });
-
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('username', data.username);
-    localStorage.setItem('user_id', data.user_id);
-    localStorage.setItem('level', data.level || 1);
-    localStorage.setItem('experience', data.experience || 0);
-    localStorage.setItem('gold', data.gold || 0);
-    localStorage.setItem('avatar', data.avatar_skin || '😊');
-
-    return data;
+    try {
+        const data = await apiRequest('/login/', 'POST', {
+            username: username,
+            password: password,
+        });
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('username', data.username);
+        localStorage.setItem('user_id', data.user_id);
+        localStorage.setItem('level', data.level || 1);
+        localStorage.setItem('experience', data.experience || 0);
+        localStorage.setItem('gold', data.gold || 0);
+        localStorage.setItem('avatar', data.avatar_skin || '😊');
+        return data;
+    } catch (error) {
+        showNotification('❌ ' + handleApiError(error, 'Ошибка входа'), 'error');
+        throw error;
+    }
 }
 
 function logoutUser() {
@@ -69,20 +75,36 @@ function getUserData() {
         xp_remaining: parseInt(localStorage.getItem('xp_remaining')) || 0,
     };
 }
+
+function saveUserResources(userData) {
+    localStorage.setItem('gold', userData.gold);
+    localStorage.setItem('experience', userData.experience);
+    localStorage.setItem('level', userData.level);
+    localStorage.setItem('xp_progress', userData.xp_progress);
+    localStorage.setItem('xp_for_next_level', userData.xp_for_next_level);
+    localStorage.setItem('xp_remaining', userData.xp_remaining);
+}
+
 async function refreshUserData() {
     try {
         const userData = await apiRequest('/user/', 'GET');
+        saveUserResources(userData);
         localStorage.setItem('avatar', userData.avatar_skin || '😊');
-        localStorage.setItem('level', userData.level);
-        localStorage.setItem('experience', userData.experience);
-        localStorage.setItem('gold', userData.gold);
         localStorage.setItem('total_completed', userData.total_completed || 0);
-        localStorage.setItem('xp_progress', userData.xp_progress);
-        localStorage.setItem('xp_for_next_level', userData.xp_for_next_level);
-        localStorage.setItem('xp_remaining', userData.xp_remaining);
         return userData;
     } catch (error) {
-        console.warn('Не удалось обновить данные с сервера:', error);
+        console.warn('Не удалось обновить данные:', error);
         return getUserData();
+    }
+}
+
+async function updateUserResources() {
+    try {
+        const userData = await apiRequest('/user/', 'GET');
+        saveUserResources(userData);
+        return userData;
+    } catch (error) {
+        console.warn('Не удалось обновить ресурсы:', error);
+        return null;
     }
 }
