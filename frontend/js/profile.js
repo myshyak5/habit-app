@@ -34,8 +34,7 @@ async function loadAllSkins() {
             price: skin.price
         }));
     } catch (error) {
-        console.error('❌ Ошибка загрузки скинов:', error);
-        allSkins = [];
+        showNotification('❌ ' + handleApiError(error, 'Не удалось загрузить скины'), 'error');
     }
 }
 
@@ -103,7 +102,7 @@ async function loadOwnedSkinsIntoSelector() {
         });
         highlightSelectedAvatar(currentAvatar);
     } catch (error) {
-        console.warn('⚠️ Не удалось загрузить скины с сервера:', error);
+        showNotification('❌ ' + handleApiError(error, 'Не удалось загрузить купленные скины'), 'error');
     }
 }
 
@@ -204,9 +203,9 @@ async function loadChartData() {
         const canvas = document.getElementById('activityChart');
         if (canvas) {
             canvas.parentElement.innerHTML = `
-                <div style="text-align:center;color:#999;padding:20px;">
-                    <p>📊 Не удалось загрузить данные для графика</p>
-                    <p style="font-size:12px;">${error.message}</p>
+                <div class="chart-error">
+                    <p>📊 Не удалось загрузить данные</p>
+                    <p class="chart-error-text">${error.message}</p>
                 </div>
             `;
         }
@@ -228,10 +227,10 @@ function createChart(labels, data) {
         const parent = ctx.parentElement;
         if (parent) {
             parent.innerHTML = `
-                <div style="text-align:center;color:#999;padding:30px 20px;">
-                    <p style="font-size:24px;">📊</p>
+                <div class="chart-empty">
+                    <p class="chart-empty-icon">📊</p>
                     <p>Нет выполненных привычек за последнюю неделю</p>
-                    <p style="font-size:12px;">Начните выполнять привычки, чтобы увидеть график!</p>
+                    <p class="chart-empty-text">Начните выполнять привычки, чтобы увидеть график!</p>
                 </div>
             `;
         }

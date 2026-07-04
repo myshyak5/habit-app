@@ -21,9 +21,7 @@ async function loadSkinsFromServer() {
             price: skin.price
         }));
     } catch (error) {
-        console.error('❌ Ошибка загрузки скинов:', error);
-        SKINS = [];
-        showNotification('❌ Не удалось загрузить скины', 'error');
+        showNotification('❌ ' + handleApiError(error, 'Не удалось загрузить скины'), 'error');
     }
 }
 
@@ -96,9 +94,43 @@ function renderShop() {
     }).join('');
 }
 
+function updateShopSelection(skinId) {
+    document.querySelectorAll('.shop-item').forEach(item => {
+        const id = parseInt(item.dataset.id);
+        const isOwned = userSkins.includes(id);
+        const btn = item.querySelector('.btn-buy');
+        
+        item.classList.toggle('selected', id === skinId);
+        
+        if (btn) {
+            if (id === skinId) {
+                btn.textContent = '✅ Выбран';
+                btn.className = 'btn-buy selected';
+                btn.disabled = true;
+            } else if (isOwned) {
+                btn.textContent = '📤 Выбрать';
+                btn.className = 'btn-buy owned';
+                btn.disabled = false;
+            } else {
+                const skin = SKINS.find(s => s.id === id);
+                if (skin) {
+                    const gold = getUserData().gold || 0;
+                    const canBuy = gold >= skin.price;
+                    btn.textContent = `💰 ${skin.price}`;
+                    btn.className = canBuy ? 'btn-buy' : 'btn-buy disabled';
+                    btn.disabled = !canBuy;
+                }
+            }
+        }
+    });
+}
+
 async function handleShopAction(skinId) {
     const skin = SKINS.find(s => s.id === skinId);
-    if (!skin) return;
+    if (!skin) {
+        showNotification('❌ Скин не найден', 'error');
+        return;
+    }
 
     const isOwned = userSkins.includes(skinId);
     const user = getUserData();
@@ -108,7 +140,6 @@ async function handleShopAction(skinId) {
         selectSkin(skinId);
         return;
     }
-
     if (gold < skin.price) {
         showNotification('❌ Недостаточно золота!', 'error');
         return;
@@ -118,18 +149,13 @@ async function handleShopAction(skinId) {
 
     try {
         const response = await apiRequest(`/skins/${skinId}/buy/`, 'POST');
-        
         await refreshUserData();
         await loadUserSkins();
-        
         updateGold(response.gold_left || 0);
         renderShop();
-        
         showNotification(`✅ Скин "${skin.name}" куплен!`, 'success');
-        
     } catch (error) {
-        console.error('Ошибка покупки:', error);
-        showNotification('❌ Ошибка покупки: ' + error.message, 'error');
+        showNotification('❌ ' + handleApiError(error, 'Ошибка при покупке скина'), 'error');
     }
 }
 
@@ -151,7 +177,7 @@ async function selectSkin(skinId) {
         console.warn('⚠️ Не удалось сохранить аватар:', error);
     }
     
-    renderShop();
+    updateShopSelection(skinId);
     updateAvatarOnDashboard(skin.emoji);
 }
 

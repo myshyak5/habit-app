@@ -121,6 +121,69 @@ body.auth-page {
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
+.quest-progress-text {
+    font-size: 12px;
+    color: #666;
+    min-width: 30px;
+}
+.quest-reward-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 5px;
+}
+.quest-bonus {
+    text-align: center;
+    padding: 12px;
+    background: #d4edda;
+    border-radius: 10px;
+    margin-top: 10px;
+    color: #155724;
+    font-weight: 600;
+    font-size: 15px;
+}
+.quest-bonus-text {
+    font-size: 13px;
+    color: #1e7e34;
+}
+.quest-empty {
+    text-align: center;
+    color: #999;
+    padding: 10px;
+    font-size: 13px;
+}
+.habit-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.habit-description {
+    color: #999;
+    font-size: 12px;
+}
+.habit-rewards {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.habit-reward {
+    font-size: 12px;
+    color: #888;
+}
+.habit-delete-btn {
+    background: none;
+    border: none;
+    color: #ff4757;
+    cursor: pointer;
+    font-size: 18px;
+}
+.confetti-piece {
+    position: fixed;
+    top: -20px;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0;
+}
 .habits-list {
     margin-top: 20px;
 }
@@ -254,11 +317,6 @@ body.auth-page {
         opacity: 0;
     }
 }
-.confetti-piece {
-    position: fixed;
-    pointer-events: none;
-    z-index: 9999;
-}
 body.landing-page {
     display: flex;
     justify-content: center;
@@ -311,17 +369,18 @@ body.landing-page {
 }
 .notification-toast {
     position: fixed;
-    top: 80px;
     right: 20px;
-    padding: 15px 25px;
-    border-radius: 12px;
-    font-weight: 600;
+    padding: 14px 24px;
+    color: white;
+    border-radius: 10px;
+    font-weight: 500;
     z-index: 9999;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
     max-width: 400px;
     font-size: 15px;
-    color: white;
-    animation: slideIn 0.4s ease;
+    animation: slideIn 0.3s ease;
+    transform: translateX(0);
+    opacity: 1;
     transition: all 0.3s ease;
 }
 .shop-container {
@@ -589,11 +648,6 @@ body.landing-page {
     text-align: center;
     font-weight: 500;
 }
-.progress-fill.animating {
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #667eea 100%);
-    background-size: 200% auto;
-    animation: shimmer 1.5s linear infinite;
-}
 .dashboard-box {
     background: white;
     padding: 30px;
@@ -840,6 +894,25 @@ body.landing-page {
     background: #f8f9fa;
     border-radius: 12px;
     padding: 20px;
+}
+.chart-error {
+    text-align: center;
+    color: #999;
+    padding: 20px;
+}
+.chart-error-text {
+    font-size: 12px;
+}
+.chart-empty {
+    text-align: center;
+    color: #999;
+    padding: 30px 20px;
+}
+.chart-empty-icon {
+    font-size: 24px;
+}
+.chart-empty-text {
+    font-size: 12px;
 }
 .avatar-selector {
     display: grid;

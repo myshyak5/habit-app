@@ -7,9 +7,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadHabits();
 });
 
+let animationTimer = null;
 let dailyQuestsData = [];
 let dailyQuestsCompleted = false;
 let bonusData = null;
+let habitsCache = null;
 
 async function loadDailyQuests() {
     try {
@@ -49,9 +51,9 @@ function renderDailyQuests() {
                     <div class="quest-progress-bar">
                         <div class="quest-progress-fill" style="width: ${percent}%;"></div>
                     </div>
-                    <span style="font-size:12px;color:#666;min-width:30px;">${progress}/${target}</span>
+                    <span class="quest-progress-text">${progress}/${target}</span>
                 </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
+                <div class="quest-reward-wrapper">
                     <div class="quest-reward">+${quest.reward_gold} 💰 +${quest.reward_xp} XP</div>
                     <div class="quest-status">${isCompleted ? '✅' : '⏳'}</div>
                 </div>
@@ -65,10 +67,10 @@ function renderDailyQuests() {
         const allRewarded = bonusData?.all_rewarded || false;
         
         container.innerHTML += `
-            <div style="text-align:center;padding:12px;background:#d4edda;border-radius:10px;margin-top:10px;color:#155724;font-weight:600;font-size:15px;">
+            <div class="quest-bonus">
                 Все задания выполнены!
                 <br>
-                <span style="font-size:13px;color:#1e7e34;">
+                <span class="quest-bonus-text">
                     +${bonusGold} 💰 +${bonusXp} XP ${allRewarded ? '✅' : ''}
                 </span>
             </div>
@@ -81,18 +83,20 @@ function renderDailyQuestsEmpty() {
     if (!container) return;
     
     container.innerHTML = `
-        <div style="text-align:center;color:#999;padding:10px;font-size:13px;">
-            📋 Ежедневные задания будут доступны позже
-        </div>
+        <div class="quest-empty">📋 Ежедневные задания будут доступны позже</div>
     `;
 }
 
-function checkLevelUp(oldLevel, newLevel) {
+function checkLevelUp(oldLevel, newLevel, goldReward = 0) {
     if (newLevel > oldLevel) {
         animateCharacter('levelUp', 2500);
         setTimeout(() => showConfetti(), 300);
         setTimeout(() => showConfetti(), 700);
-        showNotification(`🎉 УРОВЕНЬ ПОВЫШЕН! Теперь вы ${newLevel} уровень!`, 'success');
+        let message = `🎉 Уровень повышен до ${newLevel}!`;
+        if (goldReward > 0) {
+            message += ` +${goldReward} 💰`;
+        }
+        showNotification(message, 'success');
         const avatar = document.getElementById('characterAvatar');
         if (avatar) {
             avatar.style.transform = 'scale(1.5)';
@@ -108,7 +112,13 @@ async function loadHabits() {
     const habitsList = document.getElementById('habitsList');
 
     try {
-        const habits = await getHabits();
+        let habits;
+        if (habitsCache) {
+            habits = habitsCache;
+        } else {
+            habits = await getHabits();
+            habitsCache = habits;
+        }
 
         if (!habits || habits.length === 0) {
             habitsList.innerHTML = `
@@ -124,7 +134,7 @@ async function loadHabits() {
             const completed = habit.is_completed_today;
             return `
                 <div class="habit-item" data-id="${habit.id}">
-                    <div style="display:flex;align-items:center;gap:12px;">
+                    <div class="habit-info">
                         <input 
                             type="checkbox" 
                             class="habit-checkbox" 
@@ -132,14 +142,14 @@ async function loadHabits() {
                             onchange="toggleHabitHandler(${habit.id})"
                         />
                         <span class="habit-name">${habit.name}</span>
-                        ${habit.description ? `<span style="color:#999;font-size:12px;">${habit.description}</span>` : ''}
+                        ${habit.description ? `<span class="habit-description">${habit.description}</span>` : ''}
                     </div>
-                    <div style="display:flex;align-items:center;gap:10px;">
-                        <span style="font-size:12px;color:#888;">+${habit.gold_reward} 💰</span>
-                        <span style="font-size:12px;color:#888;">+${habit.xp_reward} XP</span>
+                    <div class="habit-rewards">
+                        <span class="habit-reward">+${habit.gold_reward} 💰</span>
+                        <span class="habit-reward">+${habit.xp_reward} XP</span>
                         <button 
                             onclick="deleteHabitHandler(${habit.id})" 
-                            style="background:none;border:none;color:#ff4757;cursor:pointer;font-size:18px;"
+                            class="habit-delete-btn"
                         >
                             ✕
                         </button>
@@ -177,22 +187,19 @@ function updateUserInfo() {
     }
     
     const tooltipCurrent = document.getElementById('tooltipCurrentXP');
-    const tooltipTotal = document.getElementById('tooltipTotalXP');
     if (tooltipCurrent) {
         tooltipCurrent.textContent = Math.round(xpOnLevel);
     }
+    const tooltipTotal = document.getElementById('tooltipTotalXP');
     if (tooltipTotal) {
         tooltipTotal.textContent = xpForNextLevel;
     }
-    
     const progressText = document.getElementById('xpProgressText');
     if (progressText) {
         progressText.textContent = `До уровня ${user.level + 1} осталось ${Math.round(xpRemaining)} XP`;
     }
     
     document.getElementById('characterAvatar').textContent = user.avatar || '😊';
-    
-    checkLevelUp(oldLevel, user.level);
     localStorage.setItem('oldLevel', user.level);
 }
 
@@ -229,22 +236,34 @@ async function toggleHabitHandler(habitId) {
             completed_dates.push(today);
         }
 
-        await toggleHabit(habitId, completed_dates);
-        await refreshUserData();
-        await loadHabits();
+        const response = await toggleHabit(habitId, completed_dates);
+        const checkbox = document.querySelector(`.habit-item[data-id="${habitId}"] .habit-checkbox`);
+        if (checkbox) {
+            checkbox.checked = !isCurrentlyCompleted;
+        }
+        habitsCache = null;
+        await updateUserResources();
         updateUserInfo();
         await loadDailyQuests();
+
+        if (response.level_up && response.level_up.new_level > response.level_up.old_level) {
+            checkLevelUp(
+                response.level_up.old_level,
+                response.level_up.new_level,
+                response.level_up.gold_reward,
+                response.level_up.xp_reward
+            );
+        }
         
         if (!isCurrentlyCompleted) {
-            animateCharacter('veryHappy', 1500);
+            animateCharacter('veryHappy', 800);
             showNotification(`✅ Привычка выполнена! +${habit.xp_reward} XP, +${habit.gold_reward} 💰`, 'success');
         } else {
-            animateCharacter('sad', 1500);
+            animateCharacter('sad', 800);
             showNotification('⏳ Привычка отменена', 'info');
         }
     } catch (error) {
-        console.error('Ошибка отметки привычки:', error);
-        showNotification('❌ Ошибка: ' + error.message, 'error');
+        showNotification('❌ ' + handleApiError(error, 'Ошибка при отметке привычки'), 'error');
         await loadHabits();
     }
 }
@@ -254,19 +273,17 @@ async function deleteHabitHandler(habitId) {
 
     try {
         await deleteHabit(habitId);
-        await refreshUserData();
-        await loadHabits();
+        habitsCache = null;
+        await updateUserResources();
         updateUserInfo();
         await loadDailyQuests();
         showNotification('✅ Привычка удалена!', 'success');
     } catch (error) {
-        console.error('Ошибка удаления:', error);
-        showNotification('❌ Ошибка: ' + error.message, 'error');
+        showNotification('❌ ' + handleApiError(error, 'Ошибка при удалении привычки'), 'error');
     }
 }
 
-let animationTimer = null;
-function animateCharacter(emotion = 'happy', duration = 1500) {
+function animateCharacter(emotion = 'happy', duration = 800) {
     const avatar = document.getElementById('characterAvatar');
     if (!avatar) return;
 
@@ -276,14 +293,11 @@ function animateCharacter(emotion = 'happy', duration = 1500) {
     }
 
     const emotions = {
-        happy: '😊',
         veryHappy: '🤩',
         levelUp: '🥳',
         sad: '😢',
-        cool: '😎',
         default: localStorage.getItem('avatar') || '😊'
     };
-
     avatar.textContent = emotions[emotion] || emotions.default;
     avatar.style.transition = 'transform 0.3s ease';
     avatar.style.transform = 'rotate(-10deg) scale(1.1)';
@@ -310,19 +324,14 @@ function showConfetti() {
     
     for (let i = 0; i < 20; i++) {
         const el = document.createElement('div');
+        el.className = 'confetti-piece';
         el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-        el.style.cssText = `
-            position: fixed;
-            top: -20px;
-            left: ${Math.random() * 100}vw;
-            font-size: ${Math.random() * 18 + 18}px;
-            color: ${colors[Math.floor(Math.random() * colors.length)]};
-            pointer-events: none;
-            z-index: 9999;
-            animation: confettiFall ${Math.random() * 2 + 1.5}s linear forwards;
-            animation-delay: ${Math.random() * 0.5}s;
-            opacity: 0;
-        `;
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.fontSize = Math.random() * 18 + 18 + 'px';
+        el.style.color = colors[Math.floor(Math.random() * colors.length)];
+        el.style.animation = `confettiFall ${Math.random() * 2 + 1.5}s linear forwards`;
+        el.style.animationDelay = Math.random() * 0.5 + 's';
+        el.style.opacity = '0';
         document.body.appendChild(el);
         setTimeout(() => el.remove(), 3500);
     }
@@ -366,6 +375,7 @@ document.getElementById('addHabitForm')?.addEventListener('submit', async functi
     
     try {
         await createHabit(name, description, xpReward);
+        habitsCache = null;
         await loadHabits();
         closeHabitModal();
         showNotification(`✅ Привычка "${name}" создана!`, 'success');

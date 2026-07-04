@@ -30,21 +30,40 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
             if (response.ok) {
                 return { success: true };
             }
-            throw new Error('Сервер вернул пустой ответ с ошибкой');
+            throw new Error('Сервер вернул пустой ответ');
         }
+        
         let result;
-
         try {
             result = JSON.parse(text);
         } catch (jsonError) {
             if (response.ok) {
                 return { success: true, raw: text };
             }
-            throw new Error('Сервер вернул некорректный ответ: ' + text.substring(0, 100));
+            throw new Error('Сервер вернул некорректный ответ');
         }
 
         if (!response.ok) {
             let errorMessage = 'Ошибка запроса';
+            
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                window.location.href = 'login.html';
+                throw new Error('Сессия истекла. Войдите снова.');
+            }
+            
+            if (response.status === 403) {
+                throw new Error('Нет доступа к этому ресурсу.');
+            }
+            
+            if (response.status === 404) {
+                throw new Error('Ресурс не найден.');
+            }
+            
+            if (response.status === 500) {
+                throw new Error('Ошибка на сервере. Попробуйте позже.');
+            }
+            
             if (result.detail) errorMessage = result.detail;
             else if (result.error) errorMessage = result.error;
             else if (typeof result === 'object') {
