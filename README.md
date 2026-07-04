@@ -20,7 +20,7 @@
 
 ## Запуск
 
-**<h5>cmd</h5>**
+**<h2>cmd</h2>**
 ```bash
 cd backend
 python -m venv venv
