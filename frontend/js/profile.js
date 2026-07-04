@@ -204,7 +204,7 @@ async function loadChartData() {
         if (canvas) {
             canvas.parentElement.innerHTML = `
                 <div class="chart-error">
-                    <p>📊 Не удалось загрузить данные для графика</p>
+                    <p>📊 Не удалось загрузить данные</p>
                     <p class="chart-error-text">${error.message}</p>
                 </div>
             `;
