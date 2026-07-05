@@ -6,9 +6,9 @@ class DailyQuest(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     date = models.DateField(default=date.today)
     
-    quest_1_progress = models.IntegerField(default=0)  # Выполнить 3 привычки
-    quest_2_progress = models.IntegerField(default=0)  # Выполнить сложную привычку
-    quest_3_progress = models.IntegerField(default=0)  # Серия из 5 привычек
+    quest_1_progress = models.IntegerField(default=0)  
+    quest_2_progress = models.IntegerField(default=0)  
+    quest_3_progress = models.IntegerField(default=0) 
     quest_1_completed = models.BooleanField(default=False)
     quest_2_completed = models.BooleanField(default=False)
     quest_3_completed = models.BooleanField(default=False)
@@ -20,3 +20,6 @@ class DailyQuest(models.Model):
     
     class Meta:
         unique_together = ['user', 'date']
+        indexes = [
+            models.Index(fields=['user', 'date']),
+        ]

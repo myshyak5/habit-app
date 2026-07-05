@@ -127,23 +127,23 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# === НАСТРОЙКИ CORS (чтобы фронт мог обращаться к бэку) ===
+
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5500',   # Live Server
+    'http://localhost:5500',   
     'http://127.0.0.1:5500',
-    'http://localhost:3000',   # Другие порты
+    'http://localhost:3000',   
     'http://127.0.0.1:3000',
 ]
 CORS_ALLOW_CREDENTIALS = True
 
-# === НАСТРОЙКИ REST_FRAMEWORK ===
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',  # По умолчанию все API требуют авторизации
+        'rest_framework.permissions.IsAuthenticated',  
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',

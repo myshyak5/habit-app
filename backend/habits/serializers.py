@@ -17,12 +17,10 @@ class HabitSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at', 'user', 'is_completed_today', 'gold_reward')
         
     def get_is_completed_today(self, obj):
-        """Проверяет, выполнена ли привычка сегодня"""
         today = date.today().isoformat()
         return today in (obj.completed_dates or [])
     
     def get_gold_reward(self, obj):
-        """Возвращает награду золотом (половина от XP)"""
         return obj.xp_reward // 2
         
     def create(self, validated_data):
