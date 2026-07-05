@@ -244,7 +244,7 @@ async function toggleHabitHandler(habitId) {
         habitsCache = null;
         await updateUserResources();
         updateUserInfo();
-        await loadDailyQuests();
+        loadDailyQuests();
 
         if (response.level_up && response.level_up.new_level > response.level_up.old_level) {
             checkLevelUp(

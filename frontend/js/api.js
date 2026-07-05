@@ -47,9 +47,16 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
             let errorMessage = 'Ошибка запроса';
             
             if (response.status === 401) {
-                localStorage.removeItem('token');
-                window.location.href = 'login.html';
-                throw new Error('Сессия истекла. Войдите снова.');
+                const isLoginPage = window.location.pathname.includes('login.html') || 
+                                    window.location.pathname.includes('register.html');
+                
+                if (!isLoginPage) {
+                    localStorage.removeItem('token');
+                    window.location.href = 'login.html';
+                    throw new Error('Сессия истекла. Войдите снова.');
+                } else {
+                    throw new Error('Неверный логин или пароль');
+                }
             }
             
             if (response.status === 403) {

@@ -1,11 +1,10 @@
-# backend/daily_quests/models.py
-
 from django.db import models
 from django.conf import settings
+from datetime import date
 
 class DailyQuest(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    date = models.DateField(auto_now_add=True)
+    date = models.DateField(default=date.today)
     
     quest_1_progress = models.IntegerField(default=0)  # Выполнить 3 привычки
     quest_2_progress = models.IntegerField(default=0)  # Выполнить сложную привычку
