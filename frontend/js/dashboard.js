@@ -244,7 +244,7 @@ async function toggleHabitHandler(habitId) {
         habitsCache = null;
         await updateUserResources();
         updateUserInfo();
-        loadDailyQuests();
+        await loadDailyQuests();
 
         if (response.level_up && response.level_up.new_level > response.level_up.old_level) {
             checkLevelUp(
@@ -277,6 +277,7 @@ async function deleteHabitHandler(habitId) {
         await updateUserResources();
         updateUserInfo();
         await loadDailyQuests();
+        await loadHabits();
         showNotification('✅ Привычка удалена!', 'success');
     } catch (error) {
         showNotification('❌ ' + handleApiError(error, 'Ошибка при удалении привычки'), 'error');
