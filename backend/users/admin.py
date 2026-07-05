@@ -14,7 +14,6 @@ class UserAdmin(BaseUserAdmin):
         'level', 
         'experience', 
         'gold', 
-        'health',
         'avatar_skin',
         'is_active',
         'date_joined'
@@ -39,7 +38,7 @@ class UserAdmin(BaseUserAdmin):
         (None, {'fields': ('username', 'password')}),
         ('Личная информация', {'fields': ('email', 'first_name', 'last_name')}),
         ('Игровые поля', {
-            'fields': ('experience', 'level', 'gold', 'health', 'avatar_skin', 'owned_skins'),
+            'fields': ('experience', 'level', 'gold', 'avatar_skin', 'owned_skins'),
             'classes': ('wide',),
         }),
         ('Права доступа', {
@@ -56,7 +55,7 @@ class UserAdmin(BaseUserAdmin):
         }),
         ('Игровые поля', {
             'classes': ('wide',),
-            'fields': ('level', 'gold', 'experience', 'health', 'avatar_skin'),
+            'fields': ('level', 'gold', 'experience', 'avatar_skin'),
         }),
     )
     

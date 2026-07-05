@@ -5,11 +5,10 @@ class User(AbstractUser):
     experience = models.IntegerField(default=0, verbose_name='Опыт')
     level = models.IntegerField(default=1, verbose_name='Уровень')
     gold = models.IntegerField(default=0, verbose_name='Золото')
-    health = models.IntegerField(default=100, verbose_name='Здоровье')
     avatar_skin = models.CharField(max_length=50, default='😊', verbose_name='Скин аватара')
     owned_skins = models.JSONField(default=list, verbose_name='Купленные скины')
     total_completed = models.IntegerField(default=0, verbose_name='Всего выполнено привычек')
-    selected_skins = models.JSONField(default=list)
+    # selected_skins = models.JSONField(default=list)
 
     def get_xp_for_level(self, level):
         """

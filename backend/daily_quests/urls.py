@@ -1,5 +1,3 @@
-# backend/daily_quests/urls.py
-
 from django.urls import path
 from . import views
 
