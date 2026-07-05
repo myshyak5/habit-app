@@ -8,7 +8,6 @@ from .serializers import RegisterSerializer, UserSerializer
 
 User = get_user_model()
 
-# ✅ РЕГИСТРАЦИЯ
 class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = RegisterSerializer
@@ -27,7 +26,7 @@ class RegisterView(generics.CreateAPIView):
             'gold': user.gold,
         }, status=status.HTTP_201_CREATED)
 
-# ✅ ЛОГИН
+
 class LoginView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
 
@@ -50,7 +49,7 @@ class LoginView(generics.GenericAPIView):
             'avatar_skin': user.avatar_skin,
         })
 
-# ✅ ПРОФИЛЬ (GET)
+
 class UserProfileView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
@@ -58,7 +57,7 @@ class UserProfileView(generics.RetrieveAPIView):
     def get_object(self):
         return self.request.user
 
-# ✅ ОБНОВЛЕНИЕ ПРОФИЛЯ (PUT/PATCH)
+
 class UserProfileUpdateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
@@ -66,7 +65,7 @@ class UserProfileUpdateView(generics.UpdateAPIView):
     def get_object(self):
         return self.request.user
 
-# ✅ УДАЛЕНИЕ АККАУНТА
+
 class DeleteUserView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
@@ -92,7 +91,7 @@ class DeleteUserView(generics.GenericAPIView):
             status=status.HTTP_200_OK
         )
 
-# ✅ ОБНОВЛЕНИЕ АВАТАРА
+
 class UpdateAvatarView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
     

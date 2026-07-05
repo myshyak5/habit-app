@@ -1,5 +1,3 @@
-# backend/daily_quests/views.py
-
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -7,14 +5,18 @@ from datetime import date
 from .models import DailyQuest
 from .serializers import DailyQuestSerializer
 from django.apps import apps
+from django.core.cache import cache
 
 
-# =============================================
-# 🔥 ОБНОВЛЕНИЕ НАГРАД ЗА ЗАДАНИЯ
-# =============================================
 
+def clear_quest_cache(user):
+    today = date.today()
+    cache_key = f'quest_progress_{user.id}_{today}'
+    cache.delete(cache_key)
+    
+    
 def update_quest_rewards(user, quest):
-    """Обновляет награды за задания (начисляет или отзывает)"""
+    clear_quest_cache(user)
     quests = [
         {'id': 1, 'completed': quest.quest_1_completed, 'rewarded': quest.quest_1_rewarded, 
          'gold': 10, 'xp': 20, 'reward_field': 'quest_1_rewarded'},
@@ -24,7 +26,6 @@ def update_quest_rewards(user, quest):
          'gold': 20, 'xp': 40, 'reward_field': 'quest_3_rewarded'},
     ]
     
-    # 👇 БОНУС ЗА ВСЕ ЗАДАНИЯ
     all_completed = quest.quest_1_completed and quest.quest_2_completed and quest.quest_3_completed
     bonus_gold = 25
     bonus_xp = 50
@@ -39,32 +40,26 @@ def update_quest_rewards(user, quest):
             user.add_experience(-q['xp'])
             setattr(quest, q['reward_field'], False)
     
-    # 👇 НАЧИСЛЯЕМ БОНУС, ЕСЛИ ВСЕ ВЫПОЛНЕНЫ
     if all_completed and not quest.all_rewarded:
         user.gold += bonus_gold
         user.add_experience(bonus_xp)
         quest.all_rewarded = True
-        print(f"🎉 Бонус за все задания: +{bonus_gold} 💵 +{bonus_xp} XP")
     elif not all_completed and quest.all_rewarded:
         user.gold = max(0, user.gold - bonus_gold)
         user.add_experience(-bonus_xp)
         quest.all_rewarded = False
-        print(f"⏳ Бонус за все задания отозван")
+
     
     user.save()
     quest.save()
 
 
-# =============================================
-# 🔄 ПОЛНЫЙ ПЕРЕСЧЁТ ПРОГРЕССА
-# =============================================
-
 def recalculate_quest_progress(user):
-    """Полный пересчёт прогресса квестов на основе выполненных привычек"""
     Habit = apps.get_model('habits', 'Habit')
     
     today = date.today()
     today_str = today.isoformat()
+    clear_quest_cache(user)
     
     quest, created = DailyQuest.objects.get_or_create(user=user, date=today)
     
@@ -90,18 +85,19 @@ def recalculate_quest_progress(user):
     return quest
 
 
-# =============================================
-# 📋 API
-# =============================================
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_quest_progress(request):
-    """Получить прогресс ежедневных заданий на сегодня"""
     user = request.user
     today = date.today()
     
-    # Базовое описание заданий
+    cache_key = f'quest_progress_{user.id}_{today}'
+    cached_data = cache.get(cache_key)
+    
+    if cached_data:
+        return Response(cached_data)
+    
+    
     quests_info = [
         {
             'id': 1,
@@ -134,7 +130,6 @@ def get_quest_progress(request):
         serializer = DailyQuestSerializer(quest)
         data = serializer.data
         
-        # Добавляем прогресс к каждому заданию
         data['quests_info'] = []
         for q in quests_info:
             progress_key = f'quest_{q["id"]}_progress'
@@ -144,14 +139,13 @@ def get_quest_progress(request):
             q_data['completed'] = data.get(completed_key, False)
             data['quests_info'].append(q_data)
         
-        # Добавляем информацию о бонусе
         data['bonus'] = {
             'gold': 25,
             'xp': 50,
             'all_completed': quest.all_completed,
             'all_rewarded': quest.all_rewarded,
         }
-        
+        cache.set(cache_key, data, 30)
         return Response(data)
         
     except DailyQuest.DoesNotExist:
@@ -181,15 +175,13 @@ def get_quest_progress(request):
             data['quests_info'].append(q_data)
         
         return Response(data)
+    
+    
 
 
 # @api_view(['POST'])
 # @permission_classes([IsAuthenticated])
 # def update_quest_progress(request):
-#     """
-#     Обновить прогресс ежедневных заданий.
-#     Использует полный пересчёт на основе выполненных привычек.
-#     """
 #     user = request.user
     
 #     quest = recalculate_quest_progress(user)

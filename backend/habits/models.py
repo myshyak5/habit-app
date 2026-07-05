@@ -20,24 +20,22 @@ class Habit(models.Model):
     
     
     def is_completed_today(self):
-        """Проверить, выполнена ли привычка сегодня"""
         from datetime import date
         today = date.today().isoformat()
         return today in self.completed_dates
     
     def toggle_today(self):
-        """Переключить статус выполнения на сегодня"""
         from datetime import date
         today = date.today().isoformat()
         
         if today in self.completed_dates:
             self.completed_dates.remove(today)
             self.user.add_experience(-self.xp_reward)
-            return False  # Была выполнена → теперь не выполнена
+            return False 
         else:
             self.completed_dates.append(today)
             self.user.add_experience(self.xp_reward)
-            return True   # Была не выполнена → теперь выполнена
+            return True
     
     class Meta:
         verbose_name = 'Привычка'
