@@ -38,9 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'rest_framework.authtoken',   # Для токенов авторизации
+    'rest_framework.authtoken',
     'corsheaders',
-    'users',    # ← ДОЛЖНО БЫТЬ!
+    'users',
     'habits',
     'daily_quests',
     'shop',

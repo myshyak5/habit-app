@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
     const user = getUserData();
     updateGold(user.gold);
-    loadUserSkins();
+    await loadUserSkins();  // 👈 ДОБАВИЛИ await
     renderShop();
 });
 
@@ -31,9 +31,12 @@ async function loadUserSkins() {
     try {
         const user = await apiRequest('/user/', 'GET');
         userSkins = user.owned_skins || [];
+        console.log('📦 Загружены скины пользователя:', userSkins);  // 👈 ДОБАВИЛИ
+        
         const currentAvatar = user.avatar_skin || '😊';
         const currentSkin = SKINS.find(s => s.emoji === currentAvatar);
         selectedSkin = currentSkin ? currentSkin.id : null;
+        console.log('🎨 Текущий выбранный скин:', selectedSkin);  // 👈 ДОБАВИЛИ
     } catch (error) {
         console.warn('Не удалось загрузить скины с сервера:', error);
         userSkins = [];
@@ -47,6 +50,8 @@ function renderShop() {
 
     const user = getUserData();
     const gold = user.gold || 0;
+
+    console.log('🎨 Рендер магазина, userSkins:', userSkins);  // 👈 ДОБАВИЛИ
 
     grid.innerHTML = SKINS.map(skin => {
         const isOwned = userSkins.includes(skin.id);
@@ -92,12 +97,15 @@ function renderShop() {
 }
 
 async function handleShopAction(skinId) {
+    console.log('🛒 handleShopAction вызвана! ID:', skinId);
     const skin = SKINS.find(s => s.id === skinId);
     if (!skin) return;
 
     const isOwned = userSkins.includes(skinId);
     const user = getUserData();
     const gold = user.gold || 0;
+
+    console.log('📊 isOwned:', isOwned, 'userSkins:', userSkins);  // 👈 ДОБАВИЛИ
 
     if (isOwned) {
         selectSkin(skinId);
@@ -112,28 +120,27 @@ async function handleShopAction(skinId) {
     if (!confirm(`🛒 Купить скин "${skin.name}" ${skin.emoji}?\nЦена: 💵 ${skin.price}\nВаш баланс: 💵 ${gold}`)) return;
 
     try {
-        // 1. Покупаем на сервере
         const response = await apiRequest(`/skins/${skinId}/buy/`, 'POST');
+        console.log('📥 Ответ сервера:', response);  // 👈 ДОБАВИЛИ
         
-        // 2. Обновляем данные с сервера
+        // 🔥 ОБНОВЛЯЕМ ДАННЫЕ
         await refreshUserData();
-        await loadUserSkins();
+        await loadUserSkins();  // 👈 ОБНОВЛЯЕМ userSkins
         
-        // 3. Обновляем интерфейс
+        console.log('📦 userSkins после обновления:', userSkins);  // 👈 ДОБАВИЛИ
+        
+        // Обновляем интерфейс
         updateGold(response.gold_left || 0);
-        renderShop();
+        renderShop();  // 👈 ПЕРЕРИСОВЫВАЕМ
         
-        // 4. Показываем уведомление
         showMessage(`✅ Скин "${skin.name}" куплен!`, 'success');
-        
-        // 5. ✅ АВТОМАТИЧЕСКИ ВЫБИРАЕМ СКИН
-        // selectSkin(skinId);  // ← РАСКОММЕНТИРОВАТЬ, ЕСЛИ НУЖНО АВТО-ВЫБОР
         
     } catch (error) {
         console.error('Ошибка покупки:', error);
         showMessage('❌ Ошибка покупки: ' + error.message, 'error');
     }
 }
+
 async function selectSkin(skinId) {
     const skin = SKINS.find(s => s.id === skinId);
     if (!skin) return;
@@ -142,7 +149,7 @@ async function selectSkin(skinId) {
     localStorage.setItem('avatar', skin.emoji);
     
     try {
-        await apiRequest('/user/update_avatar/', 'PATCH', { avatar_skin: skin.emoji });
+        await apiRequest('/user/update-avatar/', 'POST', { avatar_skin: skin.emoji });
     } catch (error) {
         console.warn('⚠️ Не удалось сохранить аватар на сервере:', error);
     }
@@ -152,12 +159,7 @@ async function selectSkin(skinId) {
     showMessage(`✅ Скин "${skin.name}" выбран!`, 'success');
 }
 
-// =============================================
-// 🔄 ОБНОВЛЕНИЕ ТОЛЬКО ВЫБРАННОГО СКИНА
-// =============================================
-
 function updateShopSelection(skinId) {
-    // 1. Снимаем выделение со ВСЕХ карточек
     document.querySelectorAll('.shop-item').forEach(item => {
         const itemId = parseInt(item.dataset.id);
         const isOwned = userSkins.includes(itemId);
@@ -185,7 +187,6 @@ function updateShopSelection(skinId) {
         }
     });
     
-    // 2. Подсвечиваем ВЫБРАННУЮ карточку
     const selectedItem = document.querySelector(`.shop-item[data-id="${skinId}"]`);
     if (selectedItem) {
         selectedItem.classList.add('selected');
