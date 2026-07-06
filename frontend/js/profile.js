@@ -185,21 +185,24 @@ async function loadChartData() {
         const today = new Date();
         const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
         const weekData = new Array(7).fill(0);
-        
+        const currentDay = today.getDay();
+        const diffToMonday = (currentDay === 0 ? 6 : currentDay - 1);
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - diffToMonday);
+        monday.setHours(0, 0, 0, 0);
         habits.forEach(habit => {
             const completedDates = habit.completed_dates || [];
             completedDates.forEach(dateStr => {
                 const date = new Date(dateStr);
-                const diffDays = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+                const diffDays = Math.floor((date - monday) / (1000 * 60 * 60 * 24));
                 if (diffDays >= 0 && diffDays < 7) {
-                    const dayIndex = (date.getDay() + 6) % 7;
-                    weekData[dayIndex]++;
+                    weekData[diffDays]++;
                 }
             });
         });
         createChart(dayNames, weekData);
     } catch (error) {
-        console.error('Ошибка загрузки данных для графика:', error);
+        console.error('Ошибка загрузки данных:', error);
         const canvas = document.getElementById('activityChart');
         if (canvas) {
             canvas.parentElement.innerHTML = `

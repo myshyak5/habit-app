@@ -7,16 +7,13 @@ function showNotification(message, type = 'info') {
         info: '#3498db',
         warning: '#f39c12'
     };
-    
     const notification = document.createElement('div');
     notification.className = 'notification-toast';
     notification.style.top = `${80 + notificationQueue.length * 62}px`;
     notification.style.background = colors[type] || colors.info;
     notification.textContent = message;
     document.body.appendChild(notification);
-    
     notificationQueue.push(notification);
-    
     setTimeout(() => {
         notification.style.opacity = '0';
         notification.style.transform = 'translateX(30px)';
