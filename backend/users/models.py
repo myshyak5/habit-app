@@ -8,15 +8,23 @@ class User(AbstractUser):
     gold = models.IntegerField(default=0, verbose_name='Золото')
     avatar_skin = models.CharField(max_length=50, default='😊', verbose_name='Скин аватара')
     owned_skins = models.JSONField(default=list, verbose_name='Купленные скины')
+    total_completed = models.IntegerField(default=0)
+    _xp_cache = {}
 
     def get_xp_for_level(self, level):
+        if level in self._xp_cache:
+            return self._xp_cache[level]
+        
         if level <= 1:
             return 0
+        
         total_xp = 0
         current_step = 100
         for lvl in range(2, level + 1):
             total_xp += current_step
             current_step += 100 + (lvl - 1) * 25
+        
+        self._xp_cache[level] = total_xp
         return total_xp
 
     def get_xp_for_next_level(self):
@@ -46,6 +54,8 @@ class User(AbstractUser):
         return level
 
     def add_experience(self, xp_amount):
+        self._xp_cache = {}
+        
         old_level = self.level
         self.experience = max(0, self.experience + xp_amount)
         self.level = self.calculate_level_from_xp(self.experience)

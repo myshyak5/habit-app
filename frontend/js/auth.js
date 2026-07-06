@@ -2,7 +2,7 @@ import { apiRequest } from './api.js';
 import store from './store.js';
 import { CONFIG } from './constants.js';
 
-async function registerUser(username, password, password2, email = '') {
+export async function registerUser(username, password, password2, email = '') {
     const data = await apiRequest('/register/', 'POST', { username, password, password2, email });
     localStorage.setItem('token', data.token);
     store.updateUser({
@@ -16,7 +16,7 @@ async function registerUser(username, password, password2, email = '') {
     return data;
 }
 
-async function loginUser(username, password) {
+export async function loginUser(username, password) {
     const data = await apiRequest('/login/', 'POST', { username, password });
     localStorage.setItem('token', data.token);
     store.updateUser({
@@ -33,13 +33,13 @@ async function loginUser(username, password) {
     return data;
 }
 
-function logoutUser() {
+export function logoutUser() {
     store.clear();
     localStorage.clear();
     window.location.href = 'login.html';
 }
 
-function checkAuth() {
+export function checkAuth() {
     if (!localStorage.getItem('token')) {
         window.location.href = 'login.html';
         return false;
@@ -47,11 +47,7 @@ function checkAuth() {
     return true;
 }
 
-function getUserData() {
-    return store.getUser();
-}
-
-async function refreshUserData() {
+export async function refreshUserData() {
     try {
         const data = await apiRequest('/user/', 'GET');
         store.updateUser({
@@ -60,6 +56,7 @@ async function refreshUserData() {
             experience: data.experience,
             gold: data.gold,
             avatar: data.avatar_skin || '😊',
+            owned_skins: data.owned_skins || [],
             xp_progress: data.xp_progress || 0,
             xp_for_next_level: data.xp_for_next_level || 100,
             xp_remaining: data.xp_remaining || 0
@@ -69,9 +66,3 @@ async function refreshUserData() {
         return store.getUser();
     }
 }
-
-async function updateUserResources() {
-    return refreshUserData();
-}
-
-export { registerUser, loginUser, logoutUser, checkAuth, getUserData, refreshUserData, updateUserResources };

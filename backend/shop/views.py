@@ -39,6 +39,8 @@ class SkinViewSet(viewsets.ReadOnlyModelViewSet):
             'status': 'success',
             'message': f'Скин "{skin.name}" куплен!',
             'gold_left': user.gold,
+            'owned_skins': user.owned_skins,
+            'avatar_skin': user.avatar_skin,
         }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='activate')
@@ -60,6 +62,6 @@ class SkinViewSet(viewsets.ReadOnlyModelViewSet):
         return Response({
             'status': 'success',
             'message': f'Скин "{skin.name}" активирован!',
-            'avatar_skin': user.avatar_skin
+            'avatar_skin': user.avatar_skin,
+            'owned_skins': user.owned_skins,
         }, status=status.HTTP_200_OK)
-

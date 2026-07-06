@@ -1,5 +1,5 @@
 import store from './store.js';
-import { checkAuth, refreshUserData, getUserData, logoutUser } from './auth.js';
+import { checkAuth, refreshUserData, logoutUser } from './auth.js';
 import { apiRequest } from './api.js';
 import { showNotification, handleApiError } from './notifications.js';
 import { getAllHabits } from './habits.js';
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 avatar_skin: selectedAvatar
             });
             await refreshUserData();
-            const user = getUserData();
+            const user = store.getUser();
             updateProfile(user);
             highlightSelectedAvatar(selectedAvatar);
             await loadOwnedSkinsIntoSelector();
@@ -148,7 +148,7 @@ async function loadOwnedSkinsIntoSelector() {
     container.querySelectorAll('.owned-skin').forEach(el => el.remove());
     
     try {
-        const user = await apiRequest('/user/', 'GET');
+        const user = store.getUser();
         const ownedSkinIds = user.owned_skins || [];
         const currentAvatar = user.avatar_skin || CONFIG.DEFAULT_AVATAR;
         const ownedSkins = allSkins.filter(skin => ownedSkinIds.includes(skin.id));

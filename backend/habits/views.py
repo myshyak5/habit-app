@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Habit
 from .serializers import HabitSerializer
-from django.apps import apps
+from users.serializers import UserSerializer
 from datetime import date
 from daily_quests.views import recalculate_quest_progress
 
@@ -13,14 +13,14 @@ class HabitViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'put', 'patch', 'delete']
 
     def get_queryset(self):
-        return Habit.objects.filter(
+        return Habit.objects.select_related('user').filter(
             user=self.request.user, 
             is_active=True
         ).order_by('-id')
 
     @action(detail=False, methods=['get'], url_path='all')
     def list_all(self, request):
-        habits = Habit.objects.filter(
+        habits = Habit.objects.select_related('user').filter(
             user=self.request.user
         ).order_by('-id')
         serializer = self.get_serializer(habits, many=True)
@@ -67,8 +67,9 @@ class HabitViewSet(viewsets.ModelViewSet):
         try:
             recalculate_quest_progress(user)
         except Exception as e:
-            print(f"Ошибка пересчёта заданий: {e}")
-        
+            pass
+
+        user_serializer = UserSerializer(user)
         response_data = serializer.data
         response_data.update({
             'gold': user.gold,
@@ -79,7 +80,8 @@ class HabitViewSet(viewsets.ModelViewSet):
                 'old_level': old_level,
                 'new_level': user.level,
                 'gold_reward': (user.level - old_level) * 10 if user.level > old_level else 0,
-            }
+            },
+            'user': user_serializer.data
         })
         
         return Response(response_data)
@@ -91,6 +93,9 @@ class HabitViewSet(viewsets.ModelViewSet):
         
         completed_dates = instance.completed_dates or []
         is_completed_today = today in completed_dates
+        
+        xp = 0
+        gold = 0
         
         if is_completed_today:
             xp = instance.xp_reward
@@ -109,13 +114,19 @@ class HabitViewSet(viewsets.ModelViewSet):
             try:
                 recalculate_quest_progress(user)
             except Exception as e:
-                print(f"Ошибка пересчёта заданий: {e}")
+                pass
+        
+        user_serializer = UserSerializer(user)
+        habits = Habit.objects.filter(user=user, is_active=True).order_by('-id')
+        habits_serializer = HabitSerializer(habits, many=True)
         
         return Response(
             {
                 'message': 'Привычка удалена',
                 'xp_removed': xp if is_completed_today else 0,
                 'gold_removed': gold if is_completed_today else 0,
+                'user': user_serializer.data,
+                'habits': habits_serializer.data,
             },
             status=200
         )

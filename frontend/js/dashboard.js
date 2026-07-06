@@ -1,5 +1,5 @@
 import store from './store.js';
-import { getUserData, refreshUserData, checkAuth, updateUserResources, logoutUser } from './auth.js';
+import { refreshUserData, checkAuth, logoutUser } from './auth.js';
 import { apiRequest } from './api.js';
 import { showNotification, handleApiError } from './notifications.js';
 import { getHabits, toggleHabit, deleteHabit, createHabit } from './habits.js';
@@ -156,6 +156,54 @@ function checkLevelUp(oldLevel, newLevel, goldReward = 0) {
     }
 }
 
+function renderHabits(habits) {
+    const habitsList = document.getElementById('habitsList');
+    if (!habitsList) return;
+
+    if (!habits || habits.length === 0) {
+        habitsList.innerHTML = `
+            <div class="empty-state">
+                <p>😴 У вас пока нет привычек</p>
+                <p style="font-size:14px;">Нажмите кнопку выше, чтобы добавить первую</p>
+            </div>
+        `;
+        return;
+    }
+
+    habitsList.innerHTML = habits.map(habit => {
+        const completed = habit.is_completed_today || false;
+        const goldReward = habit.gold_reward;
+        return `
+            <div class="habit-item" data-id="${habit.id}">
+                <div class="habit-info">
+                    <input type="checkbox" class="habit-checkbox" data-id="${habit.id}" ${completed ? 'checked' : ''} />
+                    <span class="habit-name">${habit.name}</span>
+                    ${habit.description ? `<span class="habit-description">${habit.description}</span>` : ''}
+                </div>
+                <div class="habit-rewards">
+                    <span class="habit-reward">+${goldReward} 💰</span>
+                    <span class="habit-reward">+${habit.xp_reward} XP</span>
+                    <button class="habit-delete-btn" data-id="${habit.id}">✕</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    document.querySelectorAll('.habit-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const habitId = parseInt(this.dataset.id);
+            toggleHabitHandler(habitId);
+        });
+    });
+
+    document.querySelectorAll('.habit-delete-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const habitId = parseInt(this.dataset.id);
+            deleteHabitHandler(habitId);
+        });
+    });
+}
+
 async function loadHabits() {
     const habitsList = document.getElementById('habitsList');
     if (!habitsList) return;
@@ -169,47 +217,7 @@ async function loadHabits() {
             habitsCache = habits;
         }
 
-        if (!habits || habits.length === 0) {
-            habitsList.innerHTML = `
-                <div class="empty-state">
-                    <p>😴 У вас пока нет привычек</p>
-                    <p style="font-size:14px;">Нажмите кнопку выше, чтобы добавить первую</p>
-                </div>
-            `;
-            return;
-        }
-
-        habitsList.innerHTML = habits.map(habit => {
-            const completed = habit.is_completed_today;
-            return `
-                <div class="habit-item" data-id="${habit.id}">
-                    <div class="habit-info">
-                        <input type="checkbox" class="habit-checkbox" data-id="${habit.id}" ${completed ? 'checked' : ''} />
-                        <span class="habit-name">${habit.name}</span>
-                        ${habit.description ? `<span class="habit-description">${habit.description}</span>` : ''}
-                    </div>
-                    <div class="habit-rewards">
-                        <span class="habit-reward">+${habit.gold_reward} 💰</span>
-                        <span class="habit-reward">+${habit.xp_reward} XP</span>
-                        <button class="habit-delete-btn" data-id="${habit.id}">✕</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        document.querySelectorAll('.habit-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const habitId = parseInt(this.dataset.id);
-                toggleHabitHandler(habitId);
-            });
-        });
-
-        document.querySelectorAll('.habit-delete-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const habitId = parseInt(this.dataset.id);
-                deleteHabitHandler(habitId);
-            });
-        });
+        renderHabits(habits);
 
     } catch (error) {
         showNotification('Ошибка загрузки привычек: ' + error.message, 'error');
@@ -218,7 +226,6 @@ async function loadHabits() {
 
 function updateUserInfo() {
     const user = store.getUser();
-    const oldLevel = parseInt(localStorage.getItem('oldLevel')) || user.level;
     
     document.getElementById('usernameDisplay').textContent = user.username;
     document.getElementById('levelDisplay').textContent = user.level;
@@ -276,13 +283,25 @@ async function toggleHabitHandler(habitId) {
         }
 
         const response = await toggleHabit(habitId, completed_dates);
-        habitsCache = null;
 
-        await updateUserResources();
+        if (response.user) {
+            store.updateUser({
+                username: response.user.username,
+                level: response.user.level,
+                experience: response.user.experience,
+                gold: response.user.gold,
+                avatar: response.user.avatar_skin || '😊',
+                xp_progress: response.user.xp_progress || 0,
+                xp_for_next_level: response.user.xp_for_next_level || 100,
+                xp_remaining: response.user.xp_remaining || 0
+            });
+        }
         
-        updateUserInfo();
-        await loadDailyQuests();
+        habitsCache = null;
+        
         await loadHabits();
+        await loadDailyQuests();
+        updateUserInfo();
 
         if (response.level_up && response.level_up.new_level > response.level_up.old_level) {
             checkLevelUp(
@@ -310,13 +329,33 @@ async function deleteHabitHandler(habitId) {
     if (!confirm('🗑️ Вы уверены, что хотите удалить эту привычку?')) return;
 
     try {
-        await deleteHabit(habitId);
-        habitsCache = null;
-        await updateUserResources();
-        updateUserInfo();
+        const response = await deleteHabit(habitId);
+
+        if (response.user) {
+            store.updateUser({
+                username: response.user.username,
+                level: response.user.level,
+                experience: response.user.experience,
+                gold: response.user.gold,
+                avatar: response.user.avatar_skin || '😊',
+                xp_progress: response.user.xp_progress || 0,
+                xp_for_next_level: response.user.xp_for_next_level || 100,
+                xp_remaining: response.user.xp_remaining || 0
+            });
+        }
+
+        if (response.habits) {
+            habitsCache = response.habits;
+            renderHabits(response.habits);
+        } else {
+            habitsCache = null;
+            await loadHabits();
+        }
+        
         await loadDailyQuests();
-        await loadHabits();
+        updateUserInfo();
         showNotification('✅ Привычка удалена!', 'success');
+        
     } catch (error) {
         showNotification('❌ ' + handleApiError(error, 'Ошибка при удалении привычки'), 'error');
     }

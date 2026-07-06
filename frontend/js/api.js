@@ -13,7 +13,7 @@ function isNetworkError(error) {
            error.code === 'ECONNABORTED';
 }
 
-class AuthError extends Error {
+export class AuthError extends Error {
     constructor(message, status) {
         super(message);
         this.name = 'AuthError';
@@ -21,7 +21,7 @@ class AuthError extends Error {
     }
 }
 
-class ApiError extends Error {
+export class ApiError extends Error {
     constructor(message, status, data) {
         super(message);
         this.name = 'ApiError';
@@ -30,7 +30,7 @@ class ApiError extends Error {
     }
 }
 
-async function apiRequest(endpoint, method = 'GET', data = null, retries = CONFIG.MAX_RETRIES) {
+export async function apiRequest(endpoint, method = 'GET', data = null, retries = CONFIG.MAX_RETRIES) {
     const url = `${API_URL}${endpoint}`;
     const headers = { 'Content-Type': 'application/json' };
     const token = getToken();
@@ -109,5 +109,3 @@ async function apiRequest(endpoint, method = 'GET', data = null, retries = CONFI
         throw new ApiError(error.message || 'Ошибка сети', 0);
     }
 }
-
-export { apiRequest, AuthError, ApiError };
