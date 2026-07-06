@@ -1,6 +1,8 @@
+import { CONFIG } from './constants.js';
+
 let notificationQueue = [];
 
-function showNotification(message, type = 'info') {
+export function showNotification(message, type = 'info') {
     const colors = {
         success: '#2ecc71',
         error: '#e74c3c',
@@ -24,7 +26,7 @@ function showNotification(message, type = 'info') {
             notificationQueue = notificationQueue.filter(n => n !== notification);
             updateNotificationPositions();
         }, 300);
-    }, 2000);
+    }, CONFIG.NOTIFICATION_DURATION);
 }
 
 function updateNotificationPositions() {
@@ -33,7 +35,7 @@ function updateNotificationPositions() {
     });
 }
 
-function handleApiError(error, defaultMessage = 'Произошла ошибка') {
+export function handleApiError(error, defaultMessage = 'Произошла ошибка') {
     console.error('API Error:', error);
     
     if (error.message.includes('Сессия') || error.message.includes('401')) {

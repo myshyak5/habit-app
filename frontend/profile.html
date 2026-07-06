@@ -13,11 +13,11 @@
         <div class="header-content">
             <div class="logo">🎮 Habit RPG</div>
             <nav class="nav-links">
-                <a href="dashboard.html" class="nav-link" data-page="dashboard">📊 Дашборд</a>
-                <a href="profile.html" class="nav-link" data-page="profile" class="active">👤 Профиль</a>
-                <a href="shop.html" class="nav-link" data-page="shop">🛒 Магазин</a>
+                <a href="dashboard.html" class="nav-link">📊 Дашборд</a>
+                <a href="profile.html" class="nav-link active">👤 Профиль</a>
+                <a href="shop.html" class="nav-link">🛒 Магазин</a>
             </nav>
-            <button onclick="logoutUser()" class="btn-logout">Выйти</button>
+            <button class="btn-logout" id="logoutBtn">Выйти</button>
         </div>
     </header>
     <div class="profile-container">
@@ -69,10 +69,11 @@
             </div>
         </div>
     </div>
-    <script src="js/api.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/notifications.js"></script>
-    <script src="js/habits.js"></script>
-    <script src="js/profile.js"></script>
+    <script type="module" src="js/api.js"></script>
+    <script type="module" src="js/store.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/notifications.js"></script>
+    <script type="module" src="js/habits.js"></script>
+    <script type="module" src="js/profile.js"></script>
 </body>
 </html>

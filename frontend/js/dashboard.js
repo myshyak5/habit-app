@@ -1,17 +1,65 @@
-document.addEventListener('DOMContentLoaded', async function() {
-    if (!checkAuth()) return;
-    
-    await refreshUserData();
-    updateUserInfo();
-    await loadDailyQuests();
-    await loadHabits();
-});
+import store from './store.js';
+import { getUserData, refreshUserData, checkAuth, updateUserResources, logoutUser } from './auth.js';
+import { apiRequest } from './api.js';
+import { showNotification, handleApiError } from './notifications.js';
+import { getHabits, toggleHabit, deleteHabit, createHabit } from './habits.js';
+import { CONFIG } from './constants.js';
 
 let animationTimer = null;
 let dailyQuestsData = [];
 let dailyQuestsCompleted = false;
 let bonusData = null;
 let habitsCache = null;
+
+document.addEventListener('DOMContentLoaded', async function() {
+    if (!checkAuth()) return;
+    
+    store.subscribe((state) => {
+        updateUserInfo();
+    });
+    
+    await refreshUserData();
+    updateUserInfo();
+    await loadDailyQuests();
+    await loadHabits();
+    
+    document.getElementById('logoutBtn')?.addEventListener('click', logoutUser);
+    document.getElementById('addHabitBtn')?.addEventListener('click', openHabitModal);
+    document.getElementById('closeModalBtn')?.addEventListener('click', closeHabitModal);
+    document.getElementById('addHabitModal')?.addEventListener('click', function(e) {
+        if (e.target === this) closeHabitModal();
+    });
+    
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const xp = parseInt(this.dataset.xp);
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            document.getElementById('habitXp').value = xp;
+        });
+    });
+    
+    document.getElementById('addHabitForm')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const name = document.getElementById('habitName').value.trim();
+        if (!name) {
+            showNotification('❌ Введите название привычки', 'error');
+            return;
+        }
+        const description = document.getElementById('habitDescription').value.trim();
+        const xpReward = parseInt(document.getElementById('habitXp').value) || 20;
+        
+        try {
+            await createHabit(name, description, xpReward);
+            habitsCache = null;
+            await loadHabits();
+            closeHabitModal();
+            showNotification(`✅ Привычка "${name}" создана!`, 'success');
+        } catch (error) {
+            showNotification('❌ Ошибка: ' + error.message, 'error');
+        }
+    });
+});
 
 async function loadDailyQuests() {
     try {
@@ -110,6 +158,7 @@ function checkLevelUp(oldLevel, newLevel, goldReward = 0) {
 
 async function loadHabits() {
     const habitsList = document.getElementById('habitsList');
+    if (!habitsList) return;
 
     try {
         let habits;
@@ -135,28 +184,32 @@ async function loadHabits() {
             return `
                 <div class="habit-item" data-id="${habit.id}">
                     <div class="habit-info">
-                        <input 
-                            type="checkbox" 
-                            class="habit-checkbox" 
-                            ${completed ? 'checked' : ''}
-                            onchange="toggleHabitHandler(${habit.id})"
-                        />
+                        <input type="checkbox" class="habit-checkbox" data-id="${habit.id}" ${completed ? 'checked' : ''} />
                         <span class="habit-name">${habit.name}</span>
                         ${habit.description ? `<span class="habit-description">${habit.description}</span>` : ''}
                     </div>
                     <div class="habit-rewards">
                         <span class="habit-reward">+${habit.gold_reward} 💰</span>
                         <span class="habit-reward">+${habit.xp_reward} XP</span>
-                        <button 
-                            onclick="deleteHabitHandler(${habit.id})" 
-                            class="habit-delete-btn"
-                        >
-                            ✕
-                        </button>
+                        <button class="habit-delete-btn" data-id="${habit.id}">✕</button>
                     </div>
                 </div>
             `;
         }).join('');
+
+        document.querySelectorAll('.habit-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const habitId = parseInt(this.dataset.id);
+                toggleHabitHandler(habitId);
+            });
+        });
+
+        document.querySelectorAll('.habit-delete-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const habitId = parseInt(this.dataset.id);
+                deleteHabitHandler(habitId);
+            });
+        });
 
     } catch (error) {
         showNotification('Ошибка загрузки привычек: ' + error.message, 'error');
@@ -164,7 +217,7 @@ async function loadHabits() {
 }
 
 function updateUserInfo() {
-    const user = getUserData();
+    const user = store.getUser();
     const oldLevel = parseInt(localStorage.getItem('oldLevel')) || user.level;
     
     document.getElementById('usernameDisplay').textContent = user.username;
@@ -173,7 +226,7 @@ function updateUserInfo() {
     document.getElementById('goldDisplay').textContent = user.gold;
     
     const progressPercent = user.xp_progress || 0;
-    const xpForNextLevel = user.xp_for_next_level || 100;
+    const xpForNextLevel = user.xp_for_next_level || CONFIG.XP_PER_LEVEL;
     const xpRemaining = user.xp_remaining || 0;
     const xpOnLevel = xpForNextLevel - xpRemaining;
     
@@ -199,22 +252,8 @@ function updateUserInfo() {
         progressText.textContent = `До уровня ${user.level + 1} осталось ${Math.round(xpRemaining)} XP`;
     }
     
-    document.getElementById('characterAvatar').textContent = user.avatar || '😊';
+    document.getElementById('characterAvatar').textContent = user.avatar || CONFIG.DEFAULT_AVATAR;
     localStorage.setItem('oldLevel', user.level);
-}
-
-function getUserData() {
-    return {
-        username: localStorage.getItem('username') || 'Пользователь',
-        level: parseInt(localStorage.getItem('level')) || 1,
-        experience: parseInt(localStorage.getItem('experience')) || 0,
-        gold: parseInt(localStorage.getItem('gold')) || 0,
-        avatar: localStorage.getItem('avatar') || '😊',
-        userId: parseInt(localStorage.getItem('user_id')) || null,
-        xp_progress: parseFloat(localStorage.getItem('xp_progress')) || 0,
-        xp_for_next_level: parseInt(localStorage.getItem('xp_for_next_level')) || 100,
-        xp_remaining: parseInt(localStorage.getItem('xp_remaining')) || 0,
-    };
 }
 
 async function toggleHabitHandler(habitId) {
@@ -237,21 +276,19 @@ async function toggleHabitHandler(habitId) {
         }
 
         const response = await toggleHabit(habitId, completed_dates);
-        const checkbox = document.querySelector(`.habit-item[data-id="${habitId}"] .habit-checkbox`);
-        if (checkbox) {
-            checkbox.checked = !isCurrentlyCompleted;
-        }
         habitsCache = null;
+
         await updateUserResources();
+        
         updateUserInfo();
         await loadDailyQuests();
+        await loadHabits();
 
         if (response.level_up && response.level_up.new_level > response.level_up.old_level) {
             checkLevelUp(
                 response.level_up.old_level,
                 response.level_up.new_level,
-                response.level_up.gold_reward,
-                response.level_up.xp_reward
+                response.level_up.gold_reward
             );
         }
         
@@ -263,6 +300,7 @@ async function toggleHabitHandler(habitId) {
             showNotification('⏳ Привычка отменена', 'info');
         }
     } catch (error) {
+        console.error('❌ Ошибка:', error);
         showNotification('❌ ' + handleApiError(error, 'Ошибка при отметке привычки'), 'error');
         await loadHabits();
     }
@@ -294,10 +332,10 @@ function animateCharacter(emotion = 'happy', duration = 800) {
     }
 
     const emotions = {
-        veryHappy: '🤩',
-        levelUp: '🥳',
-        sad: '😢',
-        default: localStorage.getItem('avatar') || '😊'
+        veryHappy: CONFIG.EMOTIONS.veryHappy,
+        levelUp: CONFIG.EMOTIONS.levelUp,
+        sad: CONFIG.EMOTIONS.sad,
+        default: localStorage.getItem('avatar') || CONFIG.DEFAULT_AVATAR
     };
     avatar.textContent = emotions[emotion] || emotions.default;
     avatar.style.transition = 'transform 0.3s ease';
@@ -311,7 +349,7 @@ function animateCharacter(emotion = 'happy', duration = 800) {
 
     if (emotion !== 'default') {
         animationTimer = setTimeout(() => {
-            const savedAvatar = localStorage.getItem('avatar') || '😊';
+            const savedAvatar = localStorage.getItem('avatar') || CONFIG.DEFAULT_AVATAR;
             avatar.textContent = savedAvatar;
             avatar.style.transform = 'scale(1) rotate(0deg)';
             animationTimer = null;
@@ -320,10 +358,10 @@ function animateCharacter(emotion = 'happy', duration = 800) {
 }
 
 function showConfetti() {
-    const symbols = ['✦', '✧', '⭐', '✨', '❄️', '💫'];
-    const colors = ['#ffd93d', '#ff6b6b', '#48dbfb', '#ff9ff3', '#54a0ff', '#feca57'];
+    const symbols = CONFIG.CONFETTI_SYMBOLS;
+    const colors = CONFIG.CONFETTI_COLORS;
     
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < CONFIG.CONFETTI_COUNT; i++) {
         const el = document.createElement('div');
         el.className = 'confetti-piece';
         el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
@@ -338,15 +376,6 @@ function showConfetti() {
     }
 }
 
-let selectedDifficultyXp = 20;
-
-function selectDifficulty(level, xp, btn) {
-    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    selectedDifficultyXp = xp;
-    document.getElementById('habitXp').value = xp;
-}
-
 function openHabitModal() {
     document.getElementById('addHabitModal').style.display = 'flex';
     document.getElementById('addHabitForm').reset();
@@ -354,7 +383,6 @@ function openHabitModal() {
     const defaultBtn = document.querySelector('.diff-btn.easy');
     if (defaultBtn) {
         defaultBtn.classList.add('selected');
-        selectedDifficultyXp = 20;
         document.getElementById('habitXp').value = 20;
     }
 }
@@ -362,35 +390,3 @@ function openHabitModal() {
 function closeHabitModal() {
     document.getElementById('addHabitModal').style.display = 'none';
 }
-
-document.getElementById('addHabitForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const name = document.getElementById('habitName').value.trim();
-
-    if (!name) {
-        showNotification('❌ Введите название привычки', 'error');
-        return;
-    }
-    const description = document.getElementById('habitDescription').value.trim();
-    const xpReward = parseInt(document.getElementById('habitXp').value) || 20;
-    
-    try {
-        await createHabit(name, description, xpReward);
-        habitsCache = null;
-        await loadHabits();
-        closeHabitModal();
-        showNotification(`✅ Привычка "${name}" создана!`, 'success');
-    } catch (error) {
-        showNotification('❌ Ошибка: ' + error.message, 'error');
-    }
-});
-
-document.getElementById('addHabitBtn')?.addEventListener('click', function() {
-    openHabitModal();
-});
-
-document.getElementById('addHabitModal')?.addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeHabitModal();
-    }
-});

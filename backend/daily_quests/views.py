@@ -8,7 +8,6 @@ from django.apps import apps
 from django.core.cache import cache
 
 
-
 def clear_quest_cache(user):
     today = date.today()
     cache_key = f'quest_progress_{user.id}_{today}'
@@ -175,70 +174,3 @@ def get_quest_progress(request):
             data['quests_info'].append(q_data)
         
         return Response(data)
-    
-    
-
-
-# @api_view(['POST'])
-# @permission_classes([IsAuthenticated])
-# def update_quest_progress(request):
-#     user = request.user
-    
-#     quest = recalculate_quest_progress(user)
-    
-#     quests_info = [
-#         {
-#             'id': 1,
-#             'name': '💪 Выполнить 3 привычки',
-#             'description': 'Отметь 3 любые привычки сегодня',
-#             'target': 3,
-#             'reward_gold': 10,
-#             'reward_xp': 20,
-#         },
-#         {
-#             'id': 2,
-#             'name': '📚 Выполнить сложную привычку',
-#             'description': 'Выполни привычку с наградой 40+ XP',
-#             'target': 1,
-#             'reward_gold': 15,
-#             'reward_xp': 30,
-#         },
-#         {
-#             'id': 3,
-#             'name': '🔥 Серия из 5 привычек',
-#             'description': 'Выполни 5 привычек подряд без пропусков',
-#             'target': 5,
-#             'reward_gold': 20,
-#             'reward_xp': 40,
-#         },
-#     ]
-    
-#     response_data = {
-#         'quest_1_progress': quest.quest_1_progress,
-#         'quest_2_progress': quest.quest_2_progress,
-#         'quest_3_progress': quest.quest_3_progress,
-#         'quest_1_completed': quest.quest_1_completed,
-#         'quest_2_completed': quest.quest_2_completed,
-#         'quest_3_completed': quest.quest_3_completed,
-#         'quest_1_rewarded': quest.quest_1_rewarded,
-#         'quest_2_rewarded': quest.quest_2_rewarded,
-#         'quest_3_rewarded': quest.quest_3_rewarded,
-#         'all_completed': quest.all_completed,
-#         'bonus': {
-#             'gold': 25,
-#             'xp': 50,
-#             'all_completed': quest.all_completed,
-#             'all_rewarded': quest.all_rewarded,
-#         }
-#     }
-    
-#     response_data['quests_info'] = []
-#     for q in quests_info:
-#         progress_key = f'quest_{q["id"]}_progress'
-#         completed_key = f'quest_{q["id"]}_completed'
-#         q_data = q.copy()
-#         q_data['progress'] = getattr(quest, progress_key, 0)
-#         q_data['completed'] = getattr(quest, completed_key, False)
-#         response_data['quests_info'].append(q_data)
-    
-#     return Response(response_data)

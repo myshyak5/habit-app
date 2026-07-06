@@ -12,11 +12,11 @@
         <div class="header-content">
             <div class="logo">🎮 Habit RPG</div>
             <nav class="nav-links">
-                <a href="dashboard.html" class="nav-link" data-page="dashboard" class="active">📊 Дашборд</a>
-                <a href="profile.html" class="nav-link" data-page="profile">👤 Профиль</a>
-                <a href="shop.html" class="nav-link" data-page="shop">🛒 Магазин</a>
+                <a href="dashboard.html" class="nav-link active">📊 Дашборд</a>
+                <a href="profile.html" class="nav-link">👤 Профиль</a>
+                <a href="shop.html" class="nav-link">🛒 Магазин</a>
             </nav>
-            <button onclick="logoutUser()" class="btn-logout">Выйти</button>
+            <button class="btn-logout" id="logoutBtn">Выйти</button>
         </div>
     </header>
     <div class="dashboard-wrapper">
@@ -76,30 +76,25 @@
                 </div>
                 <div class="form-group">
                     <label>Сложность (опыт)</label>
-                    <div class="difficulty-selector">
-                        <button type="button" class="diff-btn easy" data-xp="20" onclick="selectDifficulty('easy', 20, this)">
-                            🟢 Лёгкий<br><small>+20 XP</small>
-                        </button>
-                        <button type="button" class="diff-btn medium" data-xp="40" onclick="selectDifficulty('medium', 40, this)">
-                            🟡 Средний<br><small>+40 XP</small>
-                        </button>
-                        <button type="button" class="diff-btn hard" data-xp="60" onclick="selectDifficulty('hard', 60, this)">
-                            🔴 Сложный<br><small>+60 XP</small>
-                        </button>
+                    <div class="difficulty-selector" id="difficultySelector">
+                        <button type="button" class="diff-btn easy" data-xp="20">🟢 Лёгкий<br><small>+20 XP</small></button>
+                        <button type="button" class="diff-btn medium" data-xp="40">🟡 Средний<br><small>+40 XP</small></button>
+                        <button type="button" class="diff-btn hard" data-xp="60">🔴 Сложный<br><small>+60 XP</small></button>
                     </div>
                     <input type="hidden" id="habitXp" value="20">
                 </div>
                 <div style="display:flex; gap:10px; margin-top:15px;">
                     <button type="submit" class="btn-primary" style="flex:1;">➕ Добавить</button>
-                    <button type="button" class="btn-secondary" onclick="closeHabitModal()" style="flex:1;">Отмена</button>
+                    <button type="button" class="btn-secondary" id="closeModalBtn">Отмена</button>
                 </div>
             </form>
         </div>
     </div>
-    <script src="js/api.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/notifications.js"></script>
-    <script src="js/habits.js"></script>
-    <script src="js/dashboard.js"></script>
+    <script type="module" src="js/api.js"></script>
+    <script type="module" src="js/store.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/notifications.js"></script>
+    <script type="module" src="js/habits.js"></script>
+    <script type="module" src="js/dashboard.js"></script>
 </body>
 </html>

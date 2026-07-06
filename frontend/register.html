@@ -35,24 +35,37 @@
             </form>
         </div>
     </div>
-    <script src="js/api.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/notifications.js"></script>
-    <script>
+    
+    <script type="module" src="js/api.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/notifications.js"></script>
+    <script type="module">
+        import { registerUser } from './js/auth.js';
+        
         document.getElementById('registerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            
             const username = document.getElementById('username').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const password2 = document.getElementById('password2').value;
             const errorDiv = document.getElementById('errorMessage');
+            
             errorDiv.style.display = 'none';
             errorDiv.textContent = '';
+            
             if (password !== password2) {
                 errorDiv.textContent = 'Пароли не совпадают';
                 errorDiv.style.display = 'block';
                 return;
             }
+            
+            if (password.length < 8) {
+                errorDiv.textContent = 'Пароль должен быть минимум 8 символов';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
             try {
                 await registerUser(username, password, password2, email);
                 window.location.href = 'dashboard.html';
