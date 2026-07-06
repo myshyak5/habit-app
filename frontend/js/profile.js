@@ -150,7 +150,7 @@ async function loadOwnedSkinsIntoSelector() {
     try {
         const user = store.getUser();
         const ownedSkinIds = user.owned_skins || [];
-        const currentAvatar = user.avatar_skin || CONFIG.DEFAULT_AVATAR;
+        const currentAvatar = user.avatar|| CONFIG.DEFAULT_AVATAR;
         const ownedSkins = allSkins.filter(skin => ownedSkinIds.includes(skin.id));
         
         ownedSkins.forEach(skin => {

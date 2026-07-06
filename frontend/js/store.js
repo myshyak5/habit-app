@@ -1,3 +1,5 @@
+import { CONFIG } from './constants.js';
+
 class Store {
     constructor() {
         this.state = {
@@ -6,7 +8,7 @@ class Store {
                 level: 1,
                 experience: 0,
                 gold: 0,
-                avatar: '😊',
+                avatar: CONFIG.DEFAULT_AVATAR,
                 xp_progress: 0,
                 xp_for_next_level: 100,
                 xp_remaining: 100
