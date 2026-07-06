@@ -1,60 +1,46 @@
+import { apiRequest } from './api.js';
+import store from './store.js';
+import { CONFIG } from './constants.js';
+
 async function registerUser(username, password, password2, email = '') {
-    try {
-        const data = await apiRequest('/register/', 'POST', {
-            username: username,
-            password: password,
-            password2: password2,
-            email: email,
-        });
-        localStorage.clear();
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('username', data.username);
-        localStorage.setItem('user_id', data.user_id);
-        localStorage.setItem('level', data.level || 1);
-        localStorage.setItem('experience', data.experience || 0);
-        localStorage.setItem('gold', data.gold || 0);
-        localStorage.setItem('avatar', data.avatar_skin || '😊');
-        return data;
-    } catch (error) {
-        console.error('Ошибка регистрации:', error);
-        throw error;
-    }
+    const data = await apiRequest('/register/', 'POST', { username, password, password2, email });
+    localStorage.setItem('token', data.token);
+    store.updateUser({
+        id: data.user_id,
+        username: data.username,
+        level: data.level || 1,
+        experience: data.experience || 0,
+        gold: data.gold || 0,
+        avatar: data.avatar_skin || CONFIG.DEFAULT_AVATAR
+    });
+    return data;
 }
 
 async function loginUser(username, password) {
-    try {
-        const data = await apiRequest('/login/', 'POST', {
-            username: username,
-            password: password,
-        });
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('username', data.username);
-        localStorage.setItem('user_id', data.user_id);
-        localStorage.setItem('level', data.level || 1);
-        localStorage.setItem('experience', data.experience || 0);
-        localStorage.setItem('gold', data.gold || 0);
-        localStorage.setItem('avatar', data.avatar_skin || '😊');
-        return data;
-    } catch (error) {
-        console.error('Ошибка входа:', error);
-        throw error;
-    }
+    const data = await apiRequest('/login/', 'POST', { username, password });
+    localStorage.setItem('token', data.token);
+    store.updateUser({
+        id: data.user_id,
+        username: data.username,
+        level: data.level || 1,
+        experience: data.experience || 0,
+        gold: data.gold || 0,
+        avatar: data.avatar_skin || CONFIG.DEFAULT_AVATAR,
+        xp_progress: data.xp_progress || 0,
+        xp_for_next_level: data.xp_for_next_level || CONFIG.XP_PER_LEVEL,
+        xp_remaining: data.xp_remaining || 0
+    });
+    return data;
 }
 
 function logoutUser() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('level');
-    localStorage.removeItem('experience');
-    localStorage.removeItem('gold');
-    localStorage.removeItem('avatar');
+    store.clear();
+    localStorage.clear();
     window.location.href = 'login.html';
 }
 
 function checkAuth() {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    if (!localStorage.getItem('token')) {
         window.location.href = 'login.html';
         return false;
     }
@@ -62,49 +48,30 @@ function checkAuth() {
 }
 
 function getUserData() {
-    return {
-        username: localStorage.getItem('username') || 'Пользователь',
-        level: parseInt(localStorage.getItem('level')) || 1,
-        experience: parseInt(localStorage.getItem('experience')) || 0,
-        gold: parseInt(localStorage.getItem('gold')) || 0,
-        avatar: localStorage.getItem('avatar') || '😊',
-        userId: parseInt(localStorage.getItem('user_id')) || null,
-        total_completed: parseInt(localStorage.getItem('total_completed')) || 0,
-        xp_progress: parseFloat(localStorage.getItem('xp_progress')) || 0,
-        xp_for_next_level: parseInt(localStorage.getItem('xp_for_next_level')) || 100,
-        xp_remaining: parseInt(localStorage.getItem('xp_remaining')) || 0,
-    };
-}
-
-function saveUserResources(userData) {
-    localStorage.setItem('gold', userData.gold);
-    localStorage.setItem('experience', userData.experience);
-    localStorage.setItem('level', userData.level);
-    localStorage.setItem('xp_progress', userData.xp_progress);
-    localStorage.setItem('xp_for_next_level', userData.xp_for_next_level);
-    localStorage.setItem('xp_remaining', userData.xp_remaining);
+    return store.getUser();
 }
 
 async function refreshUserData() {
     try {
-        const userData = await apiRequest('/user/', 'GET');
-        saveUserResources(userData);
-        localStorage.setItem('avatar', userData.avatar_skin || '😊');
-        localStorage.setItem('total_completed', userData.total_completed || 0);
-        return userData;
-    } catch (error) {
-        console.warn('Не удалось обновить данные:', error);
-        return getUserData();
+        const data = await apiRequest('/user/', 'GET');
+        store.updateUser({
+            username: data.username,
+            level: data.level,
+            experience: data.experience,
+            gold: data.gold,
+            avatar: data.avatar_skin || '😊',
+            xp_progress: data.xp_progress || 0,
+            xp_for_next_level: data.xp_for_next_level || 100,
+            xp_remaining: data.xp_remaining || 0
+        });
+        return data;
+    } catch (e) {
+        return store.getUser();
     }
 }
 
 async function updateUserResources() {
-    try {
-        const userData = await apiRequest('/user/', 'GET');
-        saveUserResources(userData);
-        return userData;
-    } catch (error) {
-        console.warn('Не удалось обновить ресурсы:', error);
-        return null;
-    }
+    return refreshUserData();
 }
+
+export { registerUser, loginUser, logoutUser, checkAuth, getUserData, refreshUserData, updateUserResources };

@@ -1,27 +1,97 @@
+import store from './store.js';
+import { checkAuth, refreshUserData, getUserData, logoutUser } from './auth.js';
+import { apiRequest } from './api.js';
+import { showNotification, handleApiError } from './notifications.js';
+import { getAllHabits } from './habits.js';
+import { CONFIG } from './constants.js';
+
 let activityChart = null;
-let selectedAvatar = '😊';
+let selectedAvatar = CONFIG.DEFAULT_AVATAR;
 let allSkins = [];
 
 document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
     
-    const avatar = localStorage.getItem('avatar') || '😊';
-    const username = localStorage.getItem('username') || 'Пользователь';
+    document.getElementById('logoutBtn')?.addEventListener('click', logoutUser);
     
-    document.getElementById('profileAvatar').textContent = avatar;
-    document.getElementById('profileUsername').textContent = username;
+    store.subscribe((state) => {
+        updateProfile(state.user);
+    });
     
     await refreshUserData();
-
-    const user = getUserData();
-    selectedAvatar = user.avatar || '😊';
-
-    await loadAllSkins();
+    const user = store.getUser();
+    selectedAvatar = user.avatar || CONFIG.DEFAULT_AVATAR;
+    
     updateProfile(user);
-    highlightSelectedAvatar(selectedAvatar);
+    await loadAllSkins();
     await loadOwnedSkinsIntoSelector();
     await loadProfileStats();
     await loadChartData();
+    highlightSelectedAvatar(selectedAvatar);
+    
+    document.getElementById('saveAvatarBtn')?.addEventListener('click', async function() {
+        try {
+            await apiRequest('/user/update-avatar/', 'POST', {
+                avatar_skin: selectedAvatar
+            });
+            await refreshUserData();
+            const user = getUserData();
+            updateProfile(user);
+            highlightSelectedAvatar(selectedAvatar);
+            await loadOwnedSkinsIntoSelector();
+            showNotification('✅ Аватар сохранён!', 'success');
+        } catch (error) {
+            console.error('Ошибка сохранения аватара:', error);
+            showNotification('❌ Ошибка сохранения аватара', 'error');
+        }
+    });
+    
+    document.getElementById('deleteAccountBtn')?.addEventListener('click', async function() {
+        const confirmDelete = confirm(
+            '⚠️ ВНИМАНИЕ! Вы собираетесь удалить свой аккаунт.\n\n' +
+            'Это действие НЕОБРАТИМО.\n' +
+            'Будут удалены:\n' +
+            '• Все ваши привычки\n' +
+            '• Вся статистика и опыт\n' +
+            '• Все купленные скины\n' +
+            '• Ваш профиль\n\n' +
+            'Вы уверены, что хотите продолжить?'
+        );
+        
+        if (!confirmDelete) return;
+        const password = prompt(
+            '🔐 Введите ваш пароль для подтверждения удаления аккаунта:'
+        );
+        
+        if (password === null) return;
+        
+        if (!password || password.trim() === '') {
+            showNotification('❌ Пароль не может быть пустым', 'error');
+            return;
+        }
+        
+        try {
+            const response = await apiRequest('/user/delete/', 'POST', {
+                password: password
+            });
+            
+            if (response.status === 'success') {
+                showNotification('✅ Аккаунт успешно удалён', 'success');
+                localStorage.clear();
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            }
+        } catch (error) {
+            console.error('Ошибка удаления аккаунта:', error);
+
+            if (error.message.includes('пароль') || error.message.includes('password')) {
+                showNotification('❌ Неверный пароль. Попробуйте снова.', 'error');
+            } else {
+                showNotification('❌ Ошибка удаления аккаунта: ' + error.message, 'error');
+            }
+        }
+    });
 });
 
 async function loadAllSkins() {
@@ -43,8 +113,7 @@ function updateProfile(user) {
     document.getElementById('profileLevel').textContent = user.level;
     document.getElementById('profileXP').textContent = user.experience;
     document.getElementById('profileGold').textContent = user.gold;
-    document.getElementById('profileAvatar').textContent = user.avatar || '😊';
-    updateAvatarOnDashboard(user.avatar || '😊');
+    document.getElementById('profileAvatar').textContent = user.avatar || CONFIG.DEFAULT_AVATAR;
 }
 
 function updateAvatarOnDashboard(emoji) {
@@ -81,7 +150,7 @@ async function loadOwnedSkinsIntoSelector() {
     try {
         const user = await apiRequest('/user/', 'GET');
         const ownedSkinIds = user.owned_skins || [];
-        const currentAvatar = user.avatar_skin || '😊';
+        const currentAvatar = user.avatar_skin || CONFIG.DEFAULT_AVATAR;
         const ownedSkins = allSkins.filter(skin => ownedSkinIds.includes(skin.id));
         
         ownedSkins.forEach(skin => {
@@ -106,74 +175,14 @@ async function loadOwnedSkinsIntoSelector() {
     }
 }
 
-document.getElementById('saveAvatarBtn')?.addEventListener('click', async function() {
-    try {
-        await apiRequest('/user/update-avatar/', 'POST', {
-            avatar_skin: selectedAvatar
-        });
-        await refreshUserData();
-        const user = getUserData();
-        updateProfile(user);
-        highlightSelectedAvatar(selectedAvatar);
-        await loadOwnedSkinsIntoSelector();
-        showNotification('✅ Аватар сохранён!', 'success');
-    } catch (error) {
-        console.error('Ошибка сохранения аватара:', error);
-        showNotification('❌ Ошибка сохранения аватара', 'error');
-    }
-});
-
-document.getElementById('deleteAccountBtn')?.addEventListener('click', async function() {
-    const confirmDelete = confirm(
-        '⚠️ ВНИМАНИЕ! Вы собираетесь удалить свой аккаунт.\n\n' +
-        'Это действие НЕОБРАТИМО.\n' +
-        'Будут удалены:\n' +
-        '• Все ваши привычки\n' +
-        '• Вся статистика и опыт\n' +
-        '• Все купленные скины\n' +
-        '• Ваш профиль\n\n' +
-        'Вы уверены, что хотите продолжить?'
-    );
-    
-    if (!confirmDelete) return;
-    const password = prompt(
-        '🔐 Введите ваш пароль для подтверждения удаления аккаунта:'
-    );
-    
-    if (password === null) return;
-    
-    if (!password || password.trim() === '') {
-        showNotification('❌ Пароль не может быть пустым', 'error');
-        return;
-    }
-    
-    try {
-        const response = await apiRequest('/user/delete/', 'POST', {
-            password: password
-        });
-        
-        if (response.status === 'success') {
-            showNotification('✅ Аккаунт успешно удалён', 'success');
-            localStorage.clear();
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1000);
-        }
-    } catch (error) {
-        console.error('Ошибка удаления аккаунта:', error);
-
-        if (error.message.includes('пароль') || error.message.includes('password')) {
-            showNotification('❌ Неверный пароль. Попробуйте снова.', 'error');
-        } else {
-            showNotification('❌ Ошибка удаления аккаунта: ' + error.message, 'error');
-        }
-    }
-});
-
 async function loadProfileStats() {
     try {
-        const user = getUserData();
-        document.getElementById('profileCompleted').textContent = user.total_completed || 0;
+        const habits = await getAllHabits();
+        let total = 0;
+        habits.forEach(habit => {
+            total += (habit.completed_dates || []).length;
+        });
+        document.getElementById('profileCompleted').textContent = total;
     } catch (error) {
         document.getElementById('profileCompleted').textContent = '0';
     }
@@ -181,7 +190,7 @@ async function loadProfileStats() {
 
 async function loadChartData() {
     try {
-        const habits = await getHabits();
+        const habits = await getAllHabits();
         const today = new Date();
         const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
         const weekData = new Array(7).fill(0);
@@ -190,6 +199,7 @@ async function loadChartData() {
         const monday = new Date(today);
         monday.setDate(today.getDate() - diffToMonday);
         monday.setHours(0, 0, 0, 0);
+        
         habits.forEach(habit => {
             const completedDates = habit.completed_dates || [];
             completedDates.forEach(dateStr => {

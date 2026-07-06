@@ -108,8 +108,7 @@ body.auth-page {
     color: #666;
     margin-bottom: 30px;
 }
-.dashboard-container,
-.profile-container {
+.dashboard-container {
     max-width: 700px;
     margin: 0 auto;
     padding: 0 20px;
@@ -393,7 +392,6 @@ body.landing-page {
     padding: 30px;
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    transition: height 0.3s ease, min-height 0.3s ease;
 }
 .shop-header {
     display: flex;
@@ -437,7 +435,6 @@ body.landing-page {
     flex-direction: column;
     height: 100%;
     min-height: 220px;
-    cursor: default;
 }
 .shop-item:hover {
     transform: translateY(-5px);
@@ -801,6 +798,7 @@ body.landing-page {
 .profile-container {
     width: 100%;
     max-width: 700px;
+    margin: 0 auto;
     padding: 20px;
 }
 .profile-box {
@@ -889,11 +887,6 @@ body.landing-page {
 .chart-container canvas {
     max-width: 100%;
     max-height: 250px;
-}
-.chart-wrapper {
-    background: #f8f9fa;
-    border-radius: 12px;
-    padding: 20px;
 }
 .chart-error {
     text-align: center;

@@ -17,33 +17,33 @@
                     <label for="username">Имя пользователя</label>
                     <input type="text" id="username" placeholder="Введите имя" required />
                 </div>
-
                 <div class="form-group">
                     <label for="password">Пароль</label>
                     <input type="password" id="password" placeholder="Введите пароль" required />
                 </div>
-
                 <div id="errorMessage" class="error-message"></div>
-                <button type="submit" class="btn-primary" style="width:100%;">
-                    Войти
-                </button>
-                <p class="auth-link">
-                    Нет аккаунта? <a href="register.html">Зарегистрироваться</a>
-                </p>
+                <button type="submit" class="btn-primary" style="width:100%;">Войти</button>
+                <p class="auth-link">Нет аккаунта? <a href="register.html">Зарегистрироваться</a></p>
             </form>
         </div>
     </div>
-    <script src="js/api.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/notifications.js"></script>
-    <script>
+    
+    <script type="module" src="js/api.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/notifications.js"></script>
+    <script type="module">
+        import { loginUser } from './js/auth.js';
+        
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const errorDiv = document.getElementById('errorMessage');
+            
             errorDiv.style.display = 'none';
             errorDiv.textContent = '';
+            
             try {
                 await loginUser(username, password);
                 window.location.href = 'dashboard.html';

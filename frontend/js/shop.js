@@ -1,10 +1,21 @@
+import store from './store.js';
+import { checkAuth, refreshUserData, getUserData } from './auth.js';
+import { apiRequest } from './api.js';
+import { showNotification, handleApiError } from './notifications.js';
+import { CONFIG } from './constants.js';
+
 let SKINS = [];
 let selectedSkin = null;
 let userSkins = [];
 
 document.addEventListener('DOMContentLoaded', async function() {
     if (!checkAuth()) return;
-    const user = getUserData();
+    
+    store.subscribe((state) => {
+        updateGold(state.user.gold);
+    });
+    
+    const user = store.getUser();
     updateGold(user.gold);
     await loadSkinsFromServer();
     await loadUserSkins();
@@ -29,7 +40,7 @@ async function loadUserSkins() {
     try {
         const user = await apiRequest('/user/', 'GET');
         userSkins = user.owned_skins || [];
-        const currentAvatar = user.avatar_skin || '😊';
+        const currentAvatar = user.avatar_skin || CONFIG.DEFAULT_AVATAR;
         const currentSkin = SKINS.find(s => s.emoji === currentAvatar);
         selectedSkin = currentSkin ? currentSkin.id : null;
     } catch (error) {
@@ -48,8 +59,13 @@ function renderShop() {
     const grid = document.getElementById('shopGrid');
     if (!grid) return;
 
-    const user = getUserData();
+    const user = store.getUser();
     const gold = user.gold || 0;
+
+    if (SKINS.length === 0) {
+        grid.innerHTML = `<div class="shop-empty"><p>🛒 Скины пока недоступны</p></div>`;
+        return;
+    }
 
     grid.innerHTML = SKINS.map(skin => {
         const isOwned = userSkins.includes(skin.id);
@@ -86,12 +102,19 @@ function renderShop() {
                 <span class="shop-item-emoji">${skin.emoji}</span>
                 <div class="shop-item-name">${skin.name}</div>
                 ${hintText ? `<div class="shop-item-hint">${hintText}</div>` : '<div class="shop-item-hint"></div>'}
-                <button class="${buttonClass}" onclick="handleShopAction(${skin.id})" ${disabled ? 'disabled' : ''}>
+                <button class="${buttonClass} buy-btn" data-id="${skin.id}" ${disabled ? 'disabled' : ''}>
                     ${buttonText}
                 </button>
             </div>
         `;
     }).join('');
+
+    grid.querySelectorAll('.buy-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const skinId = parseInt(this.dataset.id);
+            handleShopAction(skinId);
+        });
+    });
 }
 
 function updateShopSelection(skinId) {
@@ -114,7 +137,7 @@ function updateShopSelection(skinId) {
             } else {
                 const skin = SKINS.find(s => s.id === id);
                 if (skin) {
-                    const gold = getUserData().gold || 0;
+                    const gold = store.getUser().gold || 0;
                     const canBuy = gold >= skin.price;
                     btn.textContent = `💰 ${skin.price}`;
                     btn.className = canBuy ? 'btn-buy' : 'btn-buy disabled';
@@ -127,13 +150,14 @@ function updateShopSelection(skinId) {
 
 async function handleShopAction(skinId) {
     const skin = SKINS.find(s => s.id === skinId);
+
     if (!skin) {
         showNotification('❌ Скин не найден', 'error');
         return;
     }
 
     const isOwned = userSkins.includes(skinId);
-    const user = getUserData();
+    const user = store.getUser();
     const gold = user.gold || 0;
 
     if (isOwned) {
@@ -152,7 +176,7 @@ async function handleShopAction(skinId) {
         await refreshUserData();
         await loadUserSkins();
         updateGold(response.gold_left || 0);
-        renderShop();
+        renderShop();  // ← Здесь renderShop() нужен, чтобы обновить кнопки
         showNotification(`✅ Скин "${skin.name}" куплен!`, 'success');
     } catch (error) {
         showNotification('❌ ' + handleApiError(error, 'Ошибка при покупке скина'), 'error');
@@ -189,6 +213,5 @@ function updateAvatarOnDashboard(emoji) {
 window.addEventListener('storage', function(e) {
     if (e.key === 'gold') {
         updateGold(parseInt(e.newValue) || 0);
-        renderShop();
     }
 });
