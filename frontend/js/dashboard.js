@@ -290,7 +290,7 @@ async function toggleHabitHandler(habitId) {
                 level: response.user.level,
                 experience: response.user.experience,
                 gold: response.user.gold,
-                avatar: response.user.avatar_skin || '😊',
+                avatar: response.user.avatar_skin || CONFIG.DEFAULT_AVATAR,
                 xp_progress: response.user.xp_progress || 0,
                 xp_for_next_level: response.user.xp_for_next_level || 100,
                 xp_remaining: response.user.xp_remaining || 0
@@ -337,7 +337,7 @@ async function deleteHabitHandler(habitId) {
                 level: response.user.level,
                 experience: response.user.experience,
                 gold: response.user.gold,
-                avatar: response.user.avatar_skin || '😊',
+                avatar: response.user.avatar_skin || CONFIG.DEFAULT_AVATAR,
                 xp_progress: response.user.xp_progress || 0,
                 xp_for_next_level: response.user.xp_for_next_level || 100,
                 xp_remaining: response.user.xp_remaining || 0

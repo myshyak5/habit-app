@@ -55,7 +55,7 @@ export async function refreshUserData() {
             level: data.level,
             experience: data.experience,
             gold: data.gold,
-            avatar: data.avatar_skin || '😊',
+            avatar: data.avatar_skin || CONFIG.DEFAULT_AVATAR,
             owned_skins: data.owned_skins || [],
             xp_progress: data.xp_progress || 0,
             xp_for_next_level: data.xp_for_next_level || 100,

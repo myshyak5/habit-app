@@ -62,7 +62,7 @@ class Store {
     clear() {
         ['token', 'username', 'level', 'experience', 'gold', 'avatar', 
          'user_id', 'xp_progress', 'xp_for_next_level', 'xp_remaining'].forEach(k => localStorage.removeItem(k));
-        this.state.user = { username: '', level: 1, experience: 0, gold: 0, avatar: '😊', xp_progress: 0, xp_for_next_level: 100, xp_remaining: 100 };
+        this.state.user = { username: '', level: 1, experience: 0, gold: 0, avatar: CONFIG.DEFAULT_AVATAR, xp_progress: 0, xp_for_next_level: 100, xp_remaining: 100 };
         this.notify();
     }
 }
